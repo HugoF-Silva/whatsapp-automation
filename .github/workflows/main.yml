@@ -6,18 +6,19 @@ jobs:
   synth:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    - run: npm ci
-      working-directory: infra
-    - run: npm run build
-      working-directory: infra
-    - run: npx infra synth --prefix infra
-    - uses: aws-actions/configure-aws-credentials@v2
-    - uses: aws-actions/amazon-ecr-login@v1
-    - run: ./ci/build-and-push-docker.sh
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with: 
+          node-version: '18'
+      - run: npm ci
+        working-directory: infra
+      - run: npm run build
+        working-directory: infra
+      - run: npx infra synth
+        working-directory: infra
+      - uses: aws-actions/configure-aws-credentials@v2
+      - uses: aws-actions/amazon-ecr-login@v1
+      - run: ./ci/build-and-push-docker.sh
 
   deploy:
     needs: synth
