@@ -1,14 +1,24 @@
 #!/bin/bash
 set -e
 
-# ----- CONFIG -----
-AWS_REGION=${AWS_REGION:-us-east-1}
-AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID:-123456789012}
-ECR_REPO_NAME=${ECR_REPO_NAME:-evolutionapi}
+if [ -z "$AWS_REGION" ]; then
+  echo "AWS_REGION is not set"
+  exit 1
+fi
+
+if [ -z "$AWS_ACCOUNT_ID" ]; then
+  echo "AWS_ACCOUNT_ID is not set"
+  exit 1
+fi
+
+if [ -z "$ECR_REPO_NAME" ]; then
+  echo "ECR_REPO_NAME is not set"
+  exit 1
+fi
+
 IMAGE_TAG=${GITHUB_SHA:-latest}
 DOCKER_CONTEXT=${DOCKER_CONTEXT:-./docker}
 
-# ECR URL
 ECR_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
 echo "Building Docker image..."
