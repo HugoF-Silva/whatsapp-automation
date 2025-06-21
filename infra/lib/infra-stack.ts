@@ -40,6 +40,18 @@ export class InfraStack extends Stack {
     inboundQ.grantConsumeMessages(classifyFn);
     classifyQ.grantSendMessages(classifyFn);
 
+    const apiFn = new Function(this, 'ApiHandler', {
+      runtime:      Runtime.PYTHON_3_11,
+      handler:      'lambda_function.handler',      // or your handler path
+      code:         Code.fromAsset('lib/lambdas/api'),
+      timeout:      Duration.seconds(10),
+      environment:  {
+        TABLE_NAME: db.tableName,
+      },
+    });
+
+    db.grantReadWriteData(apiFn);
+
     const routeFn = new Function(this, 'RouteFn', {
       runtime: Runtime.PYTHON_3_11,
       handler: 'lambda_function.handler',
@@ -68,15 +80,13 @@ export class InfraStack extends Stack {
     // 5. API Gateway for read endpoints & admin annotate
     const api = new LambdaRestApi(this, 'ApiGateway', {
       restApiName: 'WhatsAppService',
-      handler: new Function(this, 'ApiHandler', {
-        runtime: Runtime.NODEJS_18_X,
-        handler: 'index.handler',
-        code: Code.fromAsset('lib/lambdas/api'),
-        environment: { TABLE: db.tableName }
-      }),
-      defaultMethodOptions: { authorizationType: AuthorizationType.NONE }
+      handler:     apiFn,
+      proxy:       false,               // so we can explicitly define paths
     });
-    db.grantReadWriteData(api.node.findChild('ApiHandler') as Function);
+    const route = api.root.addResource('route_times');
+    route.addResource('{user_phone}').addMethod('GET');    // GET /route_times/{user_phone}
+    api.root.addResource('all_estimates').addMethod('GET'); // GET /all_estimates
+    api.root.addResource('annotate').addMethod('POST');     // POST /annotate
 
     // 6. Reply sender Lambda (pulled by container, optional)
     const replyFn = new Function(this, 'ReplyFn', {
