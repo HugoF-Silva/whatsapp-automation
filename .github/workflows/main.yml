@@ -10,8 +10,8 @@ jobs:
       - uses: actions/setup-node@v3
         with: 
           node-version: '18'
-      - run: npm ci && npm run build --prefix cdk
-      - run: npx cdk synth --prefix cdk
+      - run: npm ci && npm run build --prefix infra
+      - run: npx infra synth --prefix infra
       - uses: aws-actions/configure-aws-credentials@v2
       - uses: aws-actions/amazon-ecr-login@v1
       - run: ./ci/build-and-push-docker.sh
@@ -20,4 +20,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: aws-actions/configure-aws-credentials@v2
-      - run: npx cdk deploy --all --require-approval=never --prefix cdk
+      - run: npx infra deploy --all --require-approval=never --prefix infra
