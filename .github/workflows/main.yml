@@ -1,0 +1,21 @@
+name: Deploy
+on:
+  push:
+    branches: [ main ]
+jobs:
+  synth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3; with: node-version: '18'
+      - run: npm ci && npm run build --prefix cdk
+      - run: npx cdk synth --prefix cdk
+      - uses: aws-actions/configure-aws-credentials@v2
+      - uses: aws-actions/amazon-ecr-login@v1
+      - run: ./ci/build-and-push-docker.sh
+  deploy:
+    needs: synth
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v2
+      - run: npx cdk deploy --all --require-approval=never --prefix cdk
