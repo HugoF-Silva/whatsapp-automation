@@ -13,3 +13,4 @@ jobs:
         with:
           script: |
             curl -sSL https://get.easypanel.io | sh
+            
