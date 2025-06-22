@@ -28,7 +28,7 @@ IMAGE_TAG=${GIT_SHA:-latest}
 BUILD_CONTEXT=${BUILD_CONTEXT}
 
 # Full ECR repo URI
-REPO_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+ECR_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 # ——————————————————————————————————————————
 
 echo "→ Logging into ECR"
@@ -40,15 +40,15 @@ aws ecr describe-repositories --repository-names "${ECR_REPO_NAME}" \
   --region "${AWS_REGION}" >/dev/null 2>&1 || \
   aws ecr create-repository --repository-name "${ECR_REPO_NAME}" --region "${AWS_REGION}"
 
-echo "→ Building image ${REPO_URI}:${IMAGE_TAG}"
+echo "→ Building image ${ECR_URL}:${IMAGE_TAG}"
 docker build \
   --file "${BUILD_CONTEXT}/Dockerfile" \
-  --tag "${REPO_URI}:${IMAGE_TAG}" \
+  --tag "${ECR_URL}:${IMAGE_TAG}" \
   "./"
 
 echo "→ Pushing to ECR"
-docker push "${REPO_URI}:${IMAGE_TAG}"
+docker push "${ECR_URL}:${IMAGE_TAG}"
 
-echo "✅ Build and push complete: ${REPO_URI}:${IMAGE_TAG}"
+echo "✅ Build and push complete: ${ECR_URL}:${IMAGE_TAG}"
 
 echo "Image pushed: ${ECR_URL}:${IMAGE_TAG}"
