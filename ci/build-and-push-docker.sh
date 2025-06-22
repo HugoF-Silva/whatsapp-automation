@@ -22,7 +22,7 @@ DOCKER_CONTEXT=${DOCKER_CONTEXT:-"./docker"}
 ECR_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
 echo "Building Docker image..."
-docker build -t ${ECR_REPO_NAME}:${IMAGE_TAG} "${DOCKER_CONTEXT}"
+docker build -t ${ECR_REPO_NAME}:${IMAGE_TAG} ${DOCKER_CONTEXT}
 
 echo "Tagging image for ECR..."
 docker tag ${ECR_REPO_NAME}:${IMAGE_TAG} ${ECR_URL}:${IMAGE_TAG}
