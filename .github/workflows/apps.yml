@@ -30,7 +30,7 @@ jobs:
         run: |
           IMAGE_URI=${{ secrets.ECR_REGISTRY }}/${{ matrix.app }}:latest
           docker build -t $IMAGE_URI .
-      
+
       - name: Push to ECR
         run: |
           IMAGE_URI=${{ secrets.ECR_REGISTRY }}/${{ matrix.app }}:latest
@@ -43,7 +43,9 @@ jobs:
           username: ${{ secrets.EASY_USER }}
           key: ${{ secrets.EASY_SSH_KEY }}
           script: |
-            # under easypanel’s apps folder
+            # 1) Install or upgrade Easypanel CLI
+            curl -sSL https://get.easypanel.io | sh
+
+            # 2) Redeploy the service with the new image
             cd /home/easypanel/apps/${{ matrix.app }}
-            # tell easypanel to redeploy using the new image
             easypanel deploy ${{ matrix.app }} --image ${{ secrets.ECR_REGISTRY }}/${{ matrix.app }}:latest
