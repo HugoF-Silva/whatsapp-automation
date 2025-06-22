@@ -50,5 +50,3 @@ echo "→ Pushing to ECR"
 docker push "${ECR_URL}:${IMAGE_TAG}"
 
 echo "✅ Build and push complete: ${ECR_URL}:${IMAGE_TAG}"
-
-echo "Image pushed: ${ECR_URL}:${IMAGE_TAG}"
