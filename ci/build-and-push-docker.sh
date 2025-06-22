@@ -25,6 +25,7 @@ ECR_REPO_NAME=${ECR_REPO_NAME:?Need ECR_REPO_NAME}
 # Tag by Git SHA (first 7 chars), fallback to “latest”
 GIT_SHA=$(git rev-parse --short=7 HEAD)
 IMAGE_TAG=${GIT_SHA:-latest}
+BUILD_CONTEXT=${BUILD_CONTEXT:-"./docker"}
 
 # Full ECR repo URI
 REPO_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
@@ -41,7 +42,7 @@ aws ecr describe-repositories --repository-names "${ECR_REPO_NAME}" \
 
 echo "→ Building image ${REPO_URI}:${IMAGE_TAG}"
 docker build \
-  --file docker/Dockerfile \
+  --file "${BUILD_CONTEXT}/Dockerfile" \
   --tag "${REPO_URI}:${IMAGE_TAG}" \
   docker/
 
