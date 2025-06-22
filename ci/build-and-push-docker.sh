@@ -25,7 +25,7 @@ ECR_REPO_NAME=${ECR_REPO_NAME:?Need ECR_REPO_NAME}
 # Tag by Git SHA (first 7 chars), fallback to “latest”
 GIT_SHA=$(git rev-parse --short=7 HEAD)
 IMAGE_TAG=${GIT_SHA:-latest}
-BUILD_CONTEXT=${BUILD_CONTEXT:-"./docker"}
+BUILD_CONTEXT=${BUILD_CONTEXT}
 
 # Full ECR repo URI
 REPO_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
