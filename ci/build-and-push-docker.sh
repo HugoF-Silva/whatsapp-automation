@@ -21,6 +21,17 @@ DOCKER_CONTEXT=${DOCKER_CONTEXT:-"./docker"}
 
 ECR_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
+echo "Checking for docker alias..."
+echo "docker is: $(which docker)"
+type docker
+alias docker || echo "No docker alias"
+
+echo Docker context: ${DOCKER_CONTEXT}
+
+echo "Current directory: $(pwd)"
+echo "Listing files in current directory:"
+ls -lah
+
 echo "Building Docker image..."
 docker build -t ${ECR_REPO_NAME}:${IMAGE_TAG} ${DOCKER_CONTEXT}
 
