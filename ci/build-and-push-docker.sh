@@ -16,8 +16,8 @@ if [ -z "$ECR_REPO_NAME" ]; then
   exit 1
 fi
 
-IMAGE_TAG=${GITHUB_SHA:-latest}
-DOCKER_CONTEXT=${DOCKER_CONTEXT:-./docker}
+IMAGE_TAG=${GITHUB_SHA:-"latest"}
+DOCKER_CONTEXT=${DOCKER_CONTEXT:-"./docker"}
 
 ECR_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
