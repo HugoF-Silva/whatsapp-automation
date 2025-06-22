@@ -44,7 +44,7 @@ echo "→ Building image ${REPO_URI}:${IMAGE_TAG}"
 docker build \
   --file "${BUILD_CONTEXT}/Dockerfile" \
   --tag "${REPO_URI}:${IMAGE_TAG}" \
-  "${BUILD_CONTEXT}/"
+  "./"
 
 echo "→ Pushing to ECR"
 docker push "${REPO_URI}:${IMAGE_TAG}"
