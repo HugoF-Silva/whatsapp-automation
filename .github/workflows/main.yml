@@ -1,55 +1,66 @@
-name: Deploy
+name: CI/CD—Terraform + ECR
+
 on:
   push:
     branches: [ main ]
+
 jobs:
-  synth:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      TF_VAR_gemini_secret_arn: ${{ secrets.GEMINI_SECRET_ARN }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with: 
-          node-version: '18'
-      - run: npm ci
-        working-directory: infra
-      - run: npm run build
-        working-directory: infra
-      - run: npx infra synth
-        working-directory: infra
-      - uses: aws-actions/configure-aws-credentials@v2
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - uses: aws-actions/amazon-ecr-login@v1
-      - run: chmod +x ./ci/build-and-push-docker.sh
-      - run: ./ci/build-and-push-docker.sh
+          aws-region: ${{ env.AWS_REGION }}
+
+      # — Build & Push EvolutionAPI Docker Image —
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build & Push EvolutionAPI
+        run: |
+          IMAGE_URI=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/evolutionapi:${{ github.sha }}
+          docker build -t $IMAGE_URI ./evolutionapi
+          docker push $IMAGE_URI
         env:
-          AWS_REGION: us-east-1
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          ECR_REPO_NAME: evolutionapi
-          BUILD_CONTEXT: ./docker
+          AWS_ACCOUNT_ID: ${{ env.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ env.AWS_REGION }}
 
-  deploy:
-    needs: synth
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+      # — Package Orchestrator Lambda —
+      - name: Package Lambda
+        run: |
+          cd lambda-orchestrator
+          pip install -r requirements.txt -t package
+          cp handler.py package/
+          cd package
+          zip -r ../orchestrator.zip .
+          cd ..
 
-      - uses: actions/setup-node@v3
+      # — Terraform Deploy —
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
         with:
-          node-version: '18'
+          terraform_version: 1.5.0
 
-      - run: npm ci
-        working-directory: infra
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
 
-      - run: npm run build
-        working-directory: infra
+      - name: Terraform Plan
+        working-directory: ./terraform
+        env:
+          TF_VAR_evolutionapi_image_tag: ${{ github.sha }}
+        run: terraform plan -out=tfplan
 
-      - uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - run: npx infra deploy --all --require-approval=never
-        working-directory: infra
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: terraform apply -input=false tfplan
