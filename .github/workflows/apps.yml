@@ -1,9 +1,6 @@
 # .github/workflows/easypanel.yml
 name: 🛠️ Install EasyPanel on server
 
-on:
-  workflow_dispatch:
-
 jobs:
   install-easypanel:
     runs-on: ubuntu-latest
@@ -13,4 +10,3 @@ jobs:
         with:
           script: |
             curl -sSL https://get.easypanel.io | sh
-            
