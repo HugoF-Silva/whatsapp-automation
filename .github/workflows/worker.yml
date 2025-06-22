@@ -1,0 +1,36 @@
+# .github/workflows/worker.yml
+name: 🤖 Deploy EvoAPI Poller Worker
+
+on:
+  push:
+    paths:
+      - "worker/**"
+      - ".github/workflows/worker.yml"
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: worker
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          aws-region: us-east-1
+
+      - name: Build & Push Worker Image
+        run: |
+          IMAGE_URI=${{ secrets.ECR_REGISTRY }}/evolutionapi-worker:latest
+          docker build -t $IMAGE_URI worker/
+          docker push $IMAGE_URI
+
+      - name: Update ECS Service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          aws-region: us-east-1
+          family: evoapi-poller
+          cluster: evoapi-poller-cluster
+          service: evoapi-poller-service
+          image: ${{ secrets.ECR_REGISTRY }}/evolutionapi-worker:latest

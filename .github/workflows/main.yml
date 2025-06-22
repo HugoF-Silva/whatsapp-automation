@@ -1,66 +1,43 @@
-name: CI/CD—Terraform + ECR
+# .github/workflows/infra.yml
+name: 🏗️ Infrastructure (Terraform)
 
 on:
   push:
-    branches: [ main ]
+    paths:
+      - "infra/**"
+      - ".github/workflows/infra.yml"
 
 jobs:
-  build-and-deploy:
+  terraform:
     runs-on: ubuntu-latest
-    env:
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      TF_VAR_gemini_secret_arn: ${{ secrets.GEMINI_SECRET_ARN }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - uses: actions/checkout@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          path: infra
 
-      # — Build & Push EvolutionAPI Docker Image —
-      - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build & Push EvolutionAPI
-        run: |
-          IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/evolutionapi:${{ github.sha }}
-          docker build -t $IMAGE_URI ./evolutionapi
-          docker push $IMAGE_URI
-        env:
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          AWS_REGION: us-east-1
-
-      # — Package Orchestrator Lambda —
-      - name: Package Lambda
-        run: |
-          cd lambda-orchestrator
-          pip install -r requirements.txt -t package
-          cp handler.py package/
-          cd package
-          zip -r ../orchestrator.zip .
-          cd ..
-
-      # — Terraform Deploy —
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.5.0
+          terraform_version: 1.5.5
 
       - name: Terraform Init
-        working-directory: ./terraform
-        run: terraform init
+        run: terraform init -input=false
+        working-directory: infra
+
+      - name: Terraform Format & Validate
+        run: |
+          terraform fmt -check
+          terraform validate
+        working-directory: infra
 
       - name: Terraform Plan
-        working-directory: ./terraform
-        env:
-          TF_VAR_evolutionapi_image_tag: ${{ github.sha }}
-        run: terraform plan -out=tfplan
+        run: terraform plan -out=tfplan -input=false
+        working-directory: infra
 
       - name: Terraform Apply
-        working-directory: ./terraform
+        if: github.ref == 'refs/heads/main'
         run: terraform apply -input=false tfplan
+        working-directory: infra
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

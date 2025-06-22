@@ -1,0 +1,49 @@
+# .github/workflows/apps.yml
+name: 🚀 Build & Deploy EvolutionAPI + n8n
+
+on:
+  push:
+    paths:
+      - "evolutionapi/**"
+      - "n8n/**"
+      - ".github/workflows/apps.yml"
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [evolutionapi, n8n]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          aws-region: us-east-1
+
+      - name: Build & Tag Docker image
+        run: |
+          IMAGE_URI=${{ secrets.ECR_REGISTRY }}/${{ matrix.app }}:latest
+          docker build -t $IMAGE_URI .
+      
+      - name: Push to ECR
+        run: |
+          IMAGE_URI=${{ secrets.ECR_REGISTRY }}/${{ matrix.app }}:latest
+          docker push $IMAGE_URI
+
+      - name: Deploy via SSH to Easypanel
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EASY_HOST }}
+          username: ${{ secrets.EASY_USER }}
+          key: ${{ secrets.EASY_SSH_KEY }}
+          script: |
+            # under easypanel’s apps folder
+            cd /home/easypanel/apps/${{ matrix.app }}
+            # tell easypanel to redeploy using the new image
+            easypanel deploy ${{ matrix.app }} --image ${{ secrets.ECR_REGISTRY }}/${{ matrix.app }}:latest
