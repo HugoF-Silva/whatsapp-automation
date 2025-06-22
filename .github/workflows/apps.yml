@@ -1,51 +1,15 @@
-# .github/workflows/apps.yml
-name: 🚀 Build & Deploy EvolutionAPI + n8n
+# .github/workflows/easypanel.yml
+name: 🛠️ Install EasyPanel on server
 
 on:
-  push:
-    paths:
-      - "evolutionapi/**"
-      - "n8n/**"
-      - ".github/workflows/apps.yml"
+  workflow_dispatch:
 
 jobs:
-  build_and_push:
+  install-easypanel:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        app: [evolutionapi, n8n]
-    defaults:
-      run:
-        working-directory: ${{ matrix.app }}
-
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
-        with:
-          aws-region: us-east-1
-
-      - name: Build & Tag Docker image
-        run: |
-          IMAGE_URI=${{ secrets.ECR_REGISTRY }}/${{ matrix.app }}:latest
-          docker build -t $IMAGE_URI .
-
-      - name: Push to ECR
-        run: |
-          IMAGE_URI=${{ secrets.ECR_REGISTRY }}/${{ matrix.app }}:latest
-          docker push $IMAGE_URI
-
-      - name: Deploy via SSH to Easypanel
+      - name: Install EasyPanel on server
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EASY_HOST }}
-          username: ${{ secrets.EASY_USER }}
-          key: ${{ secrets.EASY_SSH_KEY }}
           script: |
-            # 1) Install or upgrade Easypanel CLI
             curl -sSL https://get.easypanel.io | sh
-
-            # 2) Redeploy the service with the new image
-            cd /home/easypanel/apps/${{ matrix.app }}
-            easypanel deploy ${{ matrix.app }} --image ${{ secrets.ECR_REGISTRY }}/${{ matrix.app }}:latest
