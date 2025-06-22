@@ -1,6 +1,11 @@
 # .github/workflows/easypanel.yml
 name: 🛠️ Install EasyPanel on server
 
+on:
+  push:
+    branches:
+      - main
+
 jobs:
   install-easypanel:
     runs-on: ubuntu-latest
