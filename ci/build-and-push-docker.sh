@@ -19,7 +19,7 @@ fi
 
 # ——— CONFIGURATION —————————————————————————
 AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID:?Need AWS_ACCOUNT_ID}
-AWS_REGION   =${AWS_REGION:-us-east-1}
+AWS_REGION=${AWS_REGION:-us-east-1}
 ECR_REPO_NAME=${ECR_REPO_NAME:?Need ECR_REPO_NAME}
 
 # Tag by Git SHA (first 7 chars), fallback to “latest”
