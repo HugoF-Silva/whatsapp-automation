@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 if [ -z "$AWS_REGION" ]; then
   echo "AWS_REGION is not set"
@@ -16,53 +16,38 @@ if [ -z "$ECR_REPO_NAME" ]; then
   exit 1
 fi
 
-IMAGE_TAG=${GITHUB_SHA:-"latest"}
-DOCKER_CONTEXT=${DOCKER_CONTEXT:-"./docker"}
 
-ECR_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+# ——— CONFIGURATION —————————————————————————
+ECR_ACCOUNT_ID=${ECR_ACCOUNT_ID:?Need ECR_ACCOUNT_ID}
+AWS_REGION   =${AWS_REGION:-us-east-1}
+ECR_REPOSITORY=${ECR_REPOSITORY:?Need ECR_REPOSITORY}
 
-#!/usr/bin/env bash
-echo "--- docker command lookup ---"
-which docker
-type -a docker
-declare -f docker || echo "🍂 no docker function defined"
-echo
+# Tag by Git SHA (first 7 chars), fallback to “latest”
+GIT_SHA=$(git rev-parse --short=7 HEAD)
+IMAGE_TAG=${GIT_SHA:-latest}
 
-echo "--- inspect CLI plugins ---"
-ls -lah "$HOME/.docker/cli-plugins" 2>/dev/null || echo "🍂 no user cli-plugins dir"
-ls -lah /usr/libexec/docker/cli-plugins 2>/dev/null || echo "🍂 no system cli-plugins dir"
-echo
+# Full ECR repo URI
+REPO_URI="${ECR_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+# ——————————————————————————————————————————
 
-echo "--- docker & buildx versions ---"
-docker --version
-docker buildx version || echo "🍂 buildx plugin not found"
-echo
+echo "→ Logging into ECR"
+aws ecr get-login-password --region "${AWS_REGION}" \
+  | docker login --username AWS --password-stdin "${ECR_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
-echo "--- existing builders ---"
-docker buildx ls || echo "🍂 no builders"
-echo
+echo "→ Ensuring ECR repo exists"
+aws ecr describe-repositories --repository-names "${ECR_REPOSITORY}" \
+  --region "${AWS_REGION}" >/dev/null 2>&1 || \
+  aws ecr create-repository --repository-name "${ECR_REPOSITORY}" --region "${AWS_REGION}"
 
-echo "--- env DOCKER_* ---"
-env | grep -i '^DOCKER_' || echo "🍂 no DOCKER_* vars"
-echo
+echo "→ Building image ${REPO_URI}:${IMAGE_TAG}"
+docker build \
+  --file docker/Dockerfile \
+  --tag "${REPO_URI}:${IMAGE_TAG}" \
+  docker/
 
-echo "--- check for CRLF in this script ---"
-grep -nUa $'\r' "${BASH_SOURCE[0]}" && echo "⚠️ CRLFs found" || echo "🍂 no CRLFs"
-echo
+echo "→ Pushing to ECR"
+docker push "${REPO_URI}:${IMAGE_TAG}"
 
-echo "Docker context: ${DOCKER_CONTEXT:-./docker}"
-echo "Current directory: $(pwd)"
-echo "Listing docker/ dir:"
-ls -lah ./docker
-echo
-
-echo "Building Docker image…"
-docker build -t "${ECR_REPO_NAME}:${IMAGE_TAG}" "${DOCKER_CONTEXT}"
-
-echo "Tagging image for ECR..."
-docker tag ${ECR_REPO_NAME}:${IMAGE_TAG} ${ECR_URL}:${IMAGE_TAG}
-
-echo "Pushing image to ECR..."
-docker push ${ECR_URL}:${IMAGE_TAG}
+echo "✅ Build and push complete: ${REPO_URI}:${IMAGE_TAG}"
 
 echo "Image pushed: ${ECR_URL}:${IMAGE_TAG}"
