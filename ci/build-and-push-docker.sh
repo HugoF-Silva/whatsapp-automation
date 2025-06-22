@@ -18,26 +18,26 @@ fi
 
 
 # ——— CONFIGURATION —————————————————————————
-ECR_ACCOUNT_ID=${ECR_ACCOUNT_ID:?Need ECR_ACCOUNT_ID}
+AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID:?Need AWS_ACCOUNT_ID}
 AWS_REGION   =${AWS_REGION:-us-east-1}
-ECR_REPOSITORY=${ECR_REPOSITORY:?Need ECR_REPOSITORY}
+ECR_REPO_NAME=${ECR_REPO_NAME:?Need ECR_REPO_NAME}
 
 # Tag by Git SHA (first 7 chars), fallback to “latest”
 GIT_SHA=$(git rev-parse --short=7 HEAD)
 IMAGE_TAG=${GIT_SHA:-latest}
 
 # Full ECR repo URI
-REPO_URI="${ECR_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+REPO_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 # ——————————————————————————————————————————
 
 echo "→ Logging into ECR"
 aws ecr get-login-password --region "${AWS_REGION}" \
-  | docker login --username AWS --password-stdin "${ECR_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+  | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
 echo "→ Ensuring ECR repo exists"
-aws ecr describe-repositories --repository-names "${ECR_REPOSITORY}" \
+aws ecr describe-repositories --repository-names "${ECR_REPO_NAME}" \
   --region "${AWS_REGION}" >/dev/null 2>&1 || \
-  aws ecr create-repository --repository-name "${ECR_REPOSITORY}" --region "${AWS_REGION}"
+  aws ecr create-repository --repository-name "${ECR_REPO_NAME}" --region "${AWS_REGION}"
 
 echo "→ Building image ${REPO_URI}:${IMAGE_TAG}"
 docker build \
