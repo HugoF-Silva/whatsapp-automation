@@ -22,6 +22,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - uses: aws-actions/amazon-ecr-login@v1
+      - run: chmod +x ./ci/build-and-push-docker.sh
       - run: ./ci/build-and-push-docker.sh
         env:
           AWS_REGION: us-east-1
