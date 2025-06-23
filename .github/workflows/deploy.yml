@@ -1,0 +1,50 @@
+name: CI/CD Chatbot Services
+on:
+  push:
+    paths:
+      - 'evolution-api/**'
+      - 'n8n/**'
+      - 'redis/**'
+      - 'terraform/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1
+      ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+      CLUSTER_NAME: chatbot-cluster
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id:
+            ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key:
+            ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Push Images
+        uses: aws-actions/amazon-ecr-build-push@v2
+        with:
+          context: "+${{ matrix.service }}"
+          file: "${{ matrix.service }}/Dockerfile"
+          push: true
+          tags: latest
+        strategy:
+          matrix:
+            service: ['evolution-api', 'n8n', 'redis']
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          cluster: ${{ env.CLUSTER_NAME }}
+          service: ${{ matrix.service }}-service
+          task-definition: ${{ matrix.service }}/ecs-task-def.json

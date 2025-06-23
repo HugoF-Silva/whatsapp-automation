@@ -1,0 +1,26 @@
+{
+  "family": "n8n",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "${aws_iam_role.ecs_task_execution_role.arn}",
+  "containerDefinitions": [
+    {
+      "name": "n8n",
+      "image": "${aws_ecr_repository.n8n.repository_url}:latest",
+      "portMappings": [
+        { "containerPort": 5678, "protocol": "tcp" }
+      ],
+      "essential": true,
+      "environment": [
+        { "name": "N8N_BASIC_AUTH_ACTIVE", "value": "true" },
+        { "name": "N8N_BASIC_AUTH_USER", "value": "${var.n8n_user}" },
+        { "name": "N8N_BASIC_AUTH_PASSWORD", "value": "${var.n8n_password}" },
+        { "name": "DB_TYPE", "value": "redis" },
+        { "name": "DB_REDIS_HOST", "value": "redis" },
+        { "name": "DB_REDIS_PORT", "value": "6379" }
+      ]
+    }
+  ]
+}
