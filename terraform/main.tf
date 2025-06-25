@@ -201,6 +201,12 @@ resource "aws_dynamodb_table" "route_times" {
   }
 }
 
+data "archive_file" "message_checker" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda/message_checker"    # <-- update if your code is in a different folder
+  output_path = "${path.module}/lambda/message_checker.zip"
+}
+
 # Lambda: message-checker
 resource "aws_lambda_function" "message_checker" {
   function_name = "message-checker"
