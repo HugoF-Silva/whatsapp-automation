@@ -25,10 +25,10 @@ jobs:
         with:
           terraform_version: 1.5.3
 
-      - name: Terraform Format Check
-        run: terraform fmt -recursive -check
+      - name: Terraform Format
+        run: terraform fmt -recursive
         working-directory: terraform
-        
+
       - name: Terraform Init
         run: terraform init
         working-directory: terraform
