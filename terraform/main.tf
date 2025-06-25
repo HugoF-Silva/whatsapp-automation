@@ -143,6 +143,31 @@ data "archive_file" "trigger_api" {
   output_path = "${path.module}/lambda/trigger_api.zip"
 }
 
+resource "aws_security_group" "redis_sg" {
+  name        = "redis_sg"
+  description = "Security group for Redis cluster"
+  vpc_id      = data.aws_vpc.main.id
+
+  # Example: open Redis port 6379 to your application servers (or restrict further!)
+  ingress {
+    from_port   = 6379
+    to_port     = 6379
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"] # Change this to your application subnet or specific IPs!
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "redis-sg"
+  }
+}
+
 # ElastiCache Redis for external caching
 resource "aws_elasticache_cluster" "external" {
   cluster_id           = var.cache_cluster_id
