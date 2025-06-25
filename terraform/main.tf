@@ -54,8 +54,10 @@ data "aws_vpc" "main" {
 }
 
 data "aws_subnets" "private" {
-  vpc_id = data.aws_vpc.main.id
-}
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.main.id]
+  }
 
 # ALB for ECS Service and Lambda targets
 resource "aws_lb" "app" {
