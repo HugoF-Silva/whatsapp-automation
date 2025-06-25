@@ -2,41 +2,216 @@ provider "aws" {
   region = var.aws_region
 }
 
-# 1. VPC & Networking
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  name    = "chatbot-vpc"
-  azs     = var.azs
-  public_subnets  = var.public_subnets
-  private_subnets = var.private_subnets
+# ECS Cluster for EvolutionAPI
+resource "aws_ecs_cluster" "evolutionapi" {
+  name = "evolutionapi-cluster"
 }
 
-# 2. ECR Repositories
-resource "aws_ecr_repository" "evolution_api" { name = "evolution-api" }
-resource "aws_ecr_repository" "n8n"           { name = "n8n" }
-resource "aws_ecr_repository" "redis"         { name = "redis" }
+# Task Definition
+resource "aws_ecs_task_definition" "evolutionapi" {
+  family                   = "evolutionapi"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "512"
+  memory                   = "1024"
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  container_definitions    = jsonencode([
+    {
+      name      = "evolutionapi"
+      image     = var.evolutionapi_image
+      portMappings = [{ containerPort = 80, hostPort = 80 }]
+      environment = [{ name = "REDIS_URL", value = aws_elasticache_cluster.external.cache_nodes[0].address }]
+    }
+  ])
+}
 
-# 3. ECS Cluster
-resource "aws_ecs_cluster" "chatbot" { name = "chatbot-cluster" }
+# IAM Role for ECS Task Execution
+resource "aws_iam_role" "ecs_task_execution" {
+  name = "ecsTaskExecutionRole"
+  assume_role_policy = data.aws_iam_policy_document.ecs_task_execution.json
+}
 
-# 4. Application Load Balancer
-resource "aws_lb" "alb" {
-  name               = "chatbot-alb"
+data "aws_iam_policy_document" "ecs_task_execution" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# ALB for ECS Service and Lambda targets
+resource "aws_lb" "app" {
+  name               = "chatbot-lb"
   internal           = false
   load_balancer_type = "application"
-  subnets            = module.vpc.public_subnets
+  subnets            = data.aws_subnet_ids.private.ids
 }
 
-# 5. Target Groups & Listeners
-#    Define aws_lb_target_group and aws_lb_listener for each service (paths /evolution, /n8n, /redis)
+resource "aws_lb_target_group" "evolutionapi" {
+  name     = "tg-evolutionapi"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.main.id
+  target_type = "ip"
+  health_check {
+    path                = "/health"
+    matcher             = "200"
+    interval            = 30
+    healthy_threshold   = 2
+    unhealthy_threshold = 5
+  }
+}
 
-# 6. ECS Task Definitions & Services
-#    evolution-api: desired_count = var.evolution_desired_count
-#    n8n        : desired_count = 1 (autoscaling configured below)
-#    redis      : desired_count = 1 (autoscaling configured below)
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.app.arn
+  port              = "80"
+  protocol          = "HTTP"
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.evolutionapi.arn
+  }
+}
 
-# 7. Application Auto Scaling Policies
-#    aws_appautoscaling_target + aws_appautoscaling_policy for n8n and redis (CPU target 70%)
+# ECS Service with Auto Scaling
+resource "aws_ecs_service" "evolutionapi" {
+  name            = "evolutionapi-service"
+  cluster         = aws_ecs_cluster.evolutionapi.id
+  task_definition = aws_ecs_task_definition.evolutionapi.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+  network_configuration {
+    subnets         = data.aws_subnet_ids.private.ids
+    security_groups = [aws_security_group.ecs_sg.id]
+  }
+  load_balancer {
+    target_group_arn = aws_lb_target_group.evolutionapi.arn
+    container_name   = "evolutionapi"
+    container_port   = 80
+  }
+  depends_on = [aws_lb_listener.http]
+}
 
-# 8. IAM Roles
-#    ecsTaskExecutionRole for task execution
+resource "aws_appautoscaling_target" "ecs" {
+  max_capacity       = 5
+  min_capacity       = 1
+  resource_id        = "service/${aws_ecs_cluster.evolutionapi.name}/${aws_ecs_service.evolutionapi.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "cpu_target" {
+  name               = "ecs-cpu-autoscale"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = 50.0
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 300
+  }
+}
+
+# ElastiCache Redis for external caching
+resource "aws_elasticache_cluster" "external" {
+  cluster_id           = var.cache_cluster_id
+  engine               = "redis"
+  node_type            = "cache.t3.micro"
+  num_cache_nodes      = 1
+  parameter_group_name = "default.redis6.x"
+  port                 = 6379
+  subnet_group_name    = aws_elasticache_subnet_group.redis_subnets.name
+  security_group_ids   = [aws_security_group.redis_sg.id]
+}
+
+resource "aws_elasticache_subnet_group" "redis_subnets" {
+  name       = "redis-subnet-group"
+  subnet_ids = data.aws_subnet_ids.private.ids
+}
+
+# DynamoDB Table
+resource "aws_dynamodb_table" "route_times" {
+  name           = var.dynamodb_table_name
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "user_phone"
+  range_key      = "timestamp"
+  attribute {
+    name = "user_phone"
+    type = "S"
+  }
+  attribute {
+    name = "timestamp"
+    type = "N"
+  }
+}
+
+# Lambda: message-checker
+resource "aws_lambda_function" "message_checker" {
+  function_name = "message-checker"
+  filename      = data.archive_file.message_checker.output_path
+  handler       = "handler.lambda_handler"
+  runtime       = "python3.9"
+  role          = aws_iam_role.lambda_exec.arn
+  environment {
+    variables = {
+      REDIS_ENDPOINT = aws_elasticache_cluster.external.cache_nodes[0].address
+      TRIGGER_API_URL = aws_lb.app.dns_name
+    }
+  }
+}
+
+# Lambda: trigger-api
+resource "aws_lambda_function" "trigger_api" {
+  function_name = "trigger-api"
+  filename      = data.archive_file.trigger_api.output_path
+  handler       = "handler.lambda_handler"
+  runtime       = "python3.9"
+  role          = aws_iam_role.lambda_exec.arn
+  environment {
+    variables = {
+      DYNAMODB_TABLE = aws_dynamodb_table.route_times.name
+      WAZE_API_KEY    = var.waze_api_key
+    }
+  }
+}
+
+# IAM Role and Policy for Lambdas
+resource "aws_iam_role" "lambda_exec" {
+  name = "lambdaExecutionRole"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action    = "sts:AssumeRole"
+        Principal = { Service = "lambda.amazonaws.com" }
+        Effect    = "Allow"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_elasticache" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonElastiCacheFullAccess"
+}

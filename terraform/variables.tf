@@ -1,26 +1,32 @@
 variable "aws_region" {
-  description = "AWS region to deploy into"
+  description = "AWS region"
   type        = string
-  default     = "us-east-1"
+  default     = "sa-east-1"
 }
 
-variable "azs" {
-  description = "List of availability zones"
-  type        = list(string)
+variable "evolutionapi_image" {
+  description = "Docker image URI for EvolutionAPI"
+  type        = string
 }
 
-variable "public_subnets" {
-  description = "List of public subnet IDs"
-  type        = list(string)
+variable "cache_cluster_id" {
+  description = "ElastiCache cluster ID for external cache"
+  type        = string
+  default     = "whatsapp-cache"
 }
 
-variable "private_subnets" {
-  description = "List of private subnet IDs"
-  type        = list(string)
+variable "dynamodb_table_name" {
+  description = "DynamoDB table for route times and estimates"
+  type        = string
+  default     = "RouteTimesTable"
 }
 
-variable "evolution_desired_count" {
-  description = "Desired count for fixed EvolutionAPI service"
-  type        = number
-  default     = 1
+variable "lambda_message_checker_s3_key" {
+  description = "S3 key for message-checker Lambda zip"
+  type        = string
+}
+
+variable "lambda_trigger_api_s3_key" {
+  description = "S3 key for trigger-api Lambda zip"
+  type        = string
 }
