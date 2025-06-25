@@ -53,7 +53,7 @@ data "aws_vpc" "main" {
   }
 }
 
-data "aws_subnet_ids" "private" {
+data "aws_subnets" "private" {
   vpc_id = data.aws_vpc.main.id
 }
 
@@ -62,7 +62,7 @@ resource "aws_lb" "app" {
   name               = "chatbot-lb"
   internal           = false
   load_balancer_type = "application"
-  subnets            = data.aws_subnet_ids.private.ids
+  subnets            = data.aws_subnets.private.ids
 }
 
 resource "aws_lb_target_group" "evolutionapi" {
@@ -98,7 +98,7 @@ resource "aws_ecs_service" "evolutionapi" {
   desired_count   = 1
   launch_type     = "FARGATE"
   network_configuration {
-    subnets         = data.aws_subnet_ids.private.ids
+    subnets         = data.aws_subnets.private.ids
     security_groups = [aws_security_group.ecs_sg.id]
   }
   load_balancer {
@@ -154,7 +154,7 @@ resource "aws_elasticache_cluster" "external" {
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
   name       = "redis-subnet-group"
-  subnet_ids = data.aws_subnet_ids.private.ids
+  subnet_ids = data.aws_subnets.private.ids
 }
 
 # DynamoDB Table
@@ -198,7 +198,6 @@ resource "aws_lambda_function" "trigger_api" {
   environment {
     variables = {
       DYNAMODB_TABLE = aws_dynamodb_table.route_times.name
-      WAZE_API_KEY    = var.waze_api_key
     }
   }
 }
