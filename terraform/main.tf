@@ -46,6 +46,17 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+data "aws_vpc" "main" {
+  filter {
+    name   = "tag:Name"
+    values = ["vpc-name"]
+  }
+}
+
+data "aws_subnet_ids" "private" {
+  vpc_id = data.aws_vpc.main.id
+}
+
 # ALB for ECS Service and Lambda targets
 resource "aws_lb" "app" {
   name               = "chatbot-lb"
@@ -121,6 +132,12 @@ resource "aws_appautoscaling_policy" "cpu_target" {
     scale_in_cooldown  = 300
     scale_out_cooldown = 300
   }
+}
+
+data "archive_file" "trigger_api" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda/trigger_api"
+  output_path = "${path.module}/lambda/trigger_api.zip"
 }
 
 # ElastiCache Redis for external caching
