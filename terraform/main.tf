@@ -102,7 +102,7 @@ resource "aws_ecs_service" "evolutionapi" {
   launch_type     = "FARGATE"
   network_configuration {
     subnets         = data.aws_subnets.private.ids
-    security_groups = [aws_security_group.ecs_sg.id]
+    security_groups = [aws_security_group.redis_sg.id]
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.evolutionapi.arn
