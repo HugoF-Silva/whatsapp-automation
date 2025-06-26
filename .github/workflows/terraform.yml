@@ -2,21 +2,27 @@ name: Terraform CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
+
+env:
+  # your ECR repo name and a sensible tag
+  ECR_REPOSITORY: evolution-api
+  IMAGE_TAG:       ${{ github.sha }}
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
+
+    # AWS creds + other secrets
     env:
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      CACHE_CLUSTER_ID: ${{ secrets.CACHE_CLUSTER_ID }}
-      DYNAMODB_TABLE_NAME: ${{ secrets.DYNAMODB_TABLE_NAME }}
+      AWS_REGION:               ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID:        ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY:    ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      CACHE_CLUSTER_ID:         ${{ secrets.CACHE_CLUSTER_ID }}
+      DYNAMODB_TABLE_NAME:      ${{ secrets.DYNAMODB_TABLE_NAME }}
+      # (no ECR_REGISTRY here—comes from login step)
 
     steps:
       - name: Checkout code
@@ -39,40 +45,34 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build & Push Docker image
+        # grab the registry from the login-ecr step
         env:
-          ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
-          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
-          IMAGE_TAG:        ${{ env.IMAGE_TAG }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          # login to ECR first…
-          aws ecr get-login-password --region $AWS_REGION \
-            | docker login --username AWS --password-stdin $ECR_REGISTRY
-
-          # build using the correct relative path
           docker build \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
             ./evolution-api-main
 
-          # push it
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
-          # expose for Terraform
-          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
-                      >> $GITHUB_OUTPUT
-                      
+          # expose to Terraform
+          echo "image_uri=$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}" \
+            >> $GITHUB_OUTPUT
+
       - name: Set Terraform env
         run: |
           echo "TF_INPUT=false"                                  >> $GITHUB_ENV
-          echo "AWS_REGION=${{ secrets.AWS_REGION }}"            >> $GITHUB_ENV
-          echo "AWS_DEFAULT_REGION=${{ secrets.AWS_REGION }}"    >> $GITHUB_ENV
-          echo "TF_VAR_aws_region=${{ secrets.AWS_REGION }}"     >> $GITHUB_ENV
-          echo "TF_VAR_evolutionapi_image=${{ steps.build.outputs.image_uri }}" >> $GITHUB_ENV
+          echo "AWS_REGION=${{ env.AWS_REGION }}"                >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=${{ env.AWS_REGION }}"        >> $GITHUB_ENV
+          echo "TF_VAR_aws_region=${{ env.AWS_REGION }}"         >> $GITHUB_ENV
+          echo "TF_VAR_evolutionapi_image=${{ steps.build.outputs.image_uri }}" \
+                                                                  >> $GITHUB_ENV
           echo "TF_VAR_cache_cluster_id=${{ secrets.CACHE_CLUSTER_ID }}"        >> $GITHUB_ENV
           echo "TF_VAR_dynamodb_table_name=${{ secrets.DYNAMODB_TABLE_NAME }}"  >> $GITHUB_ENV
           echo "TF_VAR_lambda_message_checker_s3_key=${{ secrets.LAMBDA_MESSAGE_CHECKER_S3_KEY }}" \
-                                                                    >> $GITHUB_ENV
+                                                                  >> $GITHUB_ENV
           echo "TF_VAR_lambda_trigger_api_s3_key=${{ secrets.LAMBDA_TRIGGER_API_S3_KEY }}" \
-                                                                    >> $GITHUB_ENV
+                                                                  >> $GITHUB_ENV
                                                                     
       - name: Terraform Format
         run: terraform fmt -recursive
