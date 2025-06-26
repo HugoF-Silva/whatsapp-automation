@@ -40,7 +40,7 @@ jobs:
                                                                     >> $GITHUB_ENV
           echo "TF_VAR_lambda_trigger_api_s3_key=${{ secrets.LAMBDA_TRIGGER_API_S3_KEY }}" \
                                                                     >> $GITHUB_ENV
-                                                                    
+
       - name: Terraform Format
         run: terraform fmt -recursive
         working-directory: terraform
@@ -52,7 +52,11 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
         working-directory: terraform
-
+      - name: Debug region env
+        run: |
+          echo "TF_VAR_aws_region: $TF_VAR_aws_region"
+          echo "AWS_REGION: $AWS_REGION"
+          echo "AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION"
       - name: Terraform Plan
         run: terraform plan -input=false -out=tfplan
         working-directory: terraform
