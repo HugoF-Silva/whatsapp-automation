@@ -53,6 +53,7 @@ jobs:
           # expose for Terraform
           echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
                       >> $GITHUB_OUTPUT
+                      
       - name: Set Terraform env
         run: |
           echo "TF_INPUT=false"                                  >> $GITHUB_ENV
