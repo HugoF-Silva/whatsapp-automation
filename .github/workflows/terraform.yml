@@ -35,7 +35,7 @@ jobs:
           ECR_REPOSITORY: evolution-api-main # update this
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REPOSITORY:$IMAGE_TAG ../evolution-api-main
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG ../../evolution-api-main
           docker push $ECR_REPOSITORY:$IMAGE_TAG
           echo "image_uri=${{ secrets.AWS_ROOT_ID }}.dkr.ecr.us-east-1.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
