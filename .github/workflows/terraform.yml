@@ -8,7 +8,7 @@ on:
 
 env:
   # your ECR repo name and a sensible tag
-  ECR_REPOSITORY: evolution-api
+  ECR_REPOSITORY: evolution-api-main
   IMAGE_TAG:       ${{ github.sha }}
 
 jobs:
