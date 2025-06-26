@@ -25,6 +25,14 @@ jobs:
         with:
           terraform_version: 1.5.3
 
+      - name: Set Terraform env
+        run: |
+          echo "TF_INPUT=false"           >> $GITHUB_ENV
+          echo "TF_VAR_aws_region=${{ secrets.AWS_REGION }}"            >> $GITHUB_ENV
+          echo "TF_VAR_evolutionapi_image=${{ steps.build.outputs.image_uri }}" >> $GITHUB_ENV
+          echo "TF_VAR_cache_cluster_id=${{ env.CACHE_CLUSTER_ID }}"     >> $GITHUB_ENV
+          echo "TF_VAR_dynamodb_table_name=${{ env.DYNAMODB_TABLE_NAME }}">> $GITHUB_ENV
+
       - name: Terraform Format
         run: terraform fmt -recursive
         working-directory: terraform
@@ -38,7 +46,7 @@ jobs:
         working-directory: terraform
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -input=false -out=tfplan
         working-directory: terraform
 
       - name: Terraform Apply
