@@ -139,8 +139,8 @@ resource "aws_appautoscaling_policy" "cpu_target" {
 
 data "archive_file" "trigger_api" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda/trigger_api"
-  output_path = "${path.module}/lambda/trigger_api.zip"
+  source_dir  = "${path.module}/../lambda/trigger-api"      # Note: dash not underscore!
+  output_path = "${path.module}/trigger_api.zip"
 }
 
 resource "aws_security_group" "redis_sg" {
@@ -203,14 +203,14 @@ resource "aws_dynamodb_table" "route_times" {
 
 data "archive_file" "message_checker" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda/message_checker"    # <-- update if your code is in a different folder
-  output_path = "${path.module}/lambda/message_checker.zip"
+  source_dir  = "${path.module}/../lambda/message-checker"  # Note: dash not underscore!
+  output_path = "${path.module}/message_checker.zip"
 }
 
 # Lambda: message-checker
 resource "aws_lambda_function" "message_checker" {
   function_name = "message-checker"
-  filename      = data.archive_file.message_checker.output_path
+  filename      = "${path.module}/message_checker.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.9"
   role          = aws_iam_role.lambda_exec.arn
@@ -225,7 +225,7 @@ resource "aws_lambda_function" "message_checker" {
 # Lambda: trigger-api
 resource "aws_lambda_function" "trigger_api" {
   function_name = "trigger-api"
-  filename      = data.archive_file.trigger_api.output_path
+  filename      = "${path.module}/trigger_api.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.9"
   role          = aws_iam_role.lambda_exec.arn

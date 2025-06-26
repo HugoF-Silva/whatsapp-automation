@@ -27,8 +27,9 @@ jobs:
 
       - name: Set Terraform env
         run: |
-          echo "TF_INPUT=false"           >> $GITHUB_ENV
-          echo "TF_VAR_aws_region=${{ secrets.AWS_REGION }}"            >> $GITHUB_ENV
+          echo "TF_INPUT=false"                              >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=${{ env.AWS_REGION }}"    >> $GITHUB_ENV
+          echo "TF_VAR_aws_region=${{ env.AWS_REGION }}"      >> $GITHUB_ENV
           echo "TF_VAR_evolutionapi_image=${{ steps.build.outputs.image_uri }}" >> $GITHUB_ENV
           echo "TF_VAR_cache_cluster_id=${{ env.CACHE_CLUSTER_ID }}"     >> $GITHUB_ENV
           echo "TF_VAR_dynamodb_table_name=${{ env.DYNAMODB_TABLE_NAME }}">> $GITHUB_ENV
