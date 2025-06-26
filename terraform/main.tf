@@ -27,7 +27,7 @@ resource "aws_ecs_task_definition" "evolutionapi" {
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRole"
+  name = "ecsTaskExecutionRole1"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution.json
 }
 
@@ -43,7 +43,7 @@ data "aws_iam_policy_document" "ecs_task_execution" {
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
   role       = aws_iam_role.ecs_task_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonecsTaskExecutionRole1Policy"
 }
 
 data "aws_vpc" "main" {
@@ -102,7 +102,7 @@ resource "aws_ecs_service" "evolutionapi" {
   launch_type     = "FARGATE"
   network_configuration {
     subnets         = data.aws_subnets.private.ids
-    security_groups = [aws_security_group.redis_sg.id]
+    security_groups = [aws_security_group.redis_sg_1.id]
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.evolutionapi.arn
@@ -143,8 +143,8 @@ data "archive_file" "trigger_api" {
   output_path = "${path.module}/trigger_api.zip"
 }
 
-resource "aws_security_group" "redis_sg" {
-  name        = "redis_sg"
+resource "aws_security_group" "redis_sg_1" {
+  name        = "redis_sg_1"
   description = "Security group for Redis cluster"
   vpc_id      = data.aws_vpc.main.id
 
@@ -177,7 +177,7 @@ resource "aws_elasticache_cluster" "external" {
   parameter_group_name = "default.redis6.x"
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.redis_subnets.name
-  security_group_ids   = [aws_security_group.redis_sg.id]
+  security_group_ids   = [aws_security_group.redis_sg_1.id]
 }
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
