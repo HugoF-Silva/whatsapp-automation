@@ -15,6 +15,8 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      CACHE_CLUSTER_ID: ${{ secrets.CACHE_CLUSTER_ID }}
+      DYNAMODB_TABLE_NAME: ${{ secrets.DYNAMODB_TABLE_NAME }}
 
     steps:
       - name: Checkout code
@@ -27,16 +29,18 @@ jobs:
 
       - name: Set Terraform env
         run: |
-          echo "TF_INPUT=false"                              >> $GITHUB_ENV
-          echo "AWS_DEFAULT_REGION=${{ env.AWS_REGION }}"    >> $GITHUB_ENV
-          echo "TF_VAR_aws_region=${{ env.AWS_REGION }}"      >> $GITHUB_ENV
+          echo "TF_INPUT=false"                                  >> $GITHUB_ENV
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}"            >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=${{ secrets.AWS_REGION }}"    >> $GITHUB_ENV
+          echo "TF_VAR_aws_region=${{ secrets.AWS_REGION }}"     >> $GITHUB_ENV
           echo "TF_VAR_evolutionapi_image=${{ steps.build.outputs.image_uri }}" >> $GITHUB_ENV
-          echo "TF_VAR_cache_cluster_id=${{ env.CACHE_CLUSTER_ID }}"     >> $GITHUB_ENV
-          echo "TF_VAR_dynamodb_table_name=${{ env.DYNAMODB_TABLE_NAME }}">> $GITHUB_ENV
+          echo "TF_VAR_cache_cluster_id=${{ secrets.CACHE_CLUSTER_ID }}"        >> $GITHUB_ENV
+          echo "TF_VAR_dynamodb_table_name=${{ secrets.DYNAMODB_TABLE_NAME }}"  >> $GITHUB_ENV
           echo "TF_VAR_lambda_message_checker_s3_key=${{ secrets.LAMBDA_MESSAGE_CHECKER_S3_KEY }}" \
                                                                     >> $GITHUB_ENV
           echo "TF_VAR_lambda_trigger_api_s3_key=${{ secrets.LAMBDA_TRIGGER_API_S3_KEY }}" \
                                                                     >> $GITHUB_ENV
+                                                                    
       - name: Terraform Format
         run: terraform fmt -recursive
         working-directory: terraform
