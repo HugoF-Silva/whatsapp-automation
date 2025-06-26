@@ -28,17 +28,27 @@ jobs:
           terraform_version: 1.5.3
 
 
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
       - name: Build, tag, and push Docker image to Amazon ECR
         id: build
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: evolution-api-main # update this
+          ECR_REPOSITORY: evolution-api-main   # make sure this matches your repo name in ECR
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REPOSITORY:$IMAGE_TAG ../../evolution-api-main
-          docker push $ECR_REPOSITORY:$IMAGE_TAG
-          echo "image_uri=${{ secrets.AWS_ROOT_ID }}.dkr.ecr.us-east-1.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          # build from the directory that contains your Dockerfile
+          # if your Dockerfile lives at the root of the repo:
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
 
+          # push to the fully-qualified image name
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+          # expose the full image URI for Terraform
+          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          
       - name: Set Terraform env
         run: |
           echo "TF_INPUT=false"                                  >> $GITHUB_ENV
