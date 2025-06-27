@@ -168,8 +168,6 @@ resource "aws_security_group" "redis_sglat8" {
   }
 }
 
-terraform import aws_elasticache_cluster.external var.cache_cluster_id
-
 # ElastiCache Redis for external caching
 resource "aws_elasticache_cluster" "external" {
   cluster_id           = var.cache_cluster_id

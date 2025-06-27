@@ -85,11 +85,24 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
         working-directory: terraform
+
       - name: Debug region env
         run: |
           echo "TF_VAR_aws_region: $TF_VAR_aws_region"
           echo "AWS_REGION: $AWS_REGION"
           echo "AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION"
+
+      - name: Terraform Import ElastiCache Cluster
+        working-directory: terraform
+        run: |
+          # Check if the resource is already in state; if not, import it
+          if ! terraform state list aws_elasticache_cluster.external >/dev/null 2>&1; then
+            echo "Importing existing ElastiCache cluster (${CACHE_CLUSTER_ID}) into state..."
+            terraform import aws_elasticache_cluster.external ${CACHE_CLUSTER_ID}
+          else
+            echo "ElastiCache cluster already imported; skipping."
+          fi
+
       - name: Terraform Plan
         run: terraform plan -input=false -out=tfplan
         working-directory: terraform
