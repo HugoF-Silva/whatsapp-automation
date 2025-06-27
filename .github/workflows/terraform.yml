@@ -103,14 +103,23 @@ jobs:
             echo "ElastiCache cluster already imported; skipping."
           fi
 
-      - name: Terraform Import Lambda Function
+      - name: Terraform Import Existing Lambda Functions
         working-directory: terraform
         run: |
+          # message-checker
           if ! terraform state list aws_lambda_function.message_checker >/dev/null 2>&1; then
-            echo "Importing existing Lambda function (${TF_VAR_lambda_message_checker_function_name}) into state..."
-            terraform import aws_lambda_function.message_checker "${TF_VAR_lambda_message_checker_function_name}"
+            echo "Importing Lambda function message-checker into state..."
+            terraform import aws_lambda_function.message_checker message-checker
           else
-            echo "Lambda function already imported; skipping."
+            echo "Lambda message-checker already in state; skipping."
+          fi
+ 
+          # trigger-api
+          if ! terraform state list aws_lambda_function.trigger_api >/dev/null 2>&1; then
+            echo "Importing Lambda function trigger-api into state..."
+            terraform import aws_lambda_function.trigger_api trigger-api
+          else
+            echo "Lambda trigger-api already in state; skipping."
           fi
 
       - name: Terraform Plan
