@@ -117,9 +117,20 @@ jobs:
           # trigger-api
           if ! terraform state list aws_lambda_function.trigger_api >/dev/null 2>&1; then
             echo "Importing Lambda function trigger-api into state..."
-            terraform import aws_lambda_function.trigger_api trigger-apilat14
+            terraform import aws_lambda_function.trigger_api trigger-apilat15
           else
             echo "Lambda trigger-api already in state; skipping."
+          fi
+
+      - name: Terraform Import Existing Lambda Function URLs
+        working-directory: terraform
+        run: |
+          # message-checker Function URL
+          if ! terraform state list aws_lambda_function_url.message_checker >/dev/null 2>&1; then
+            echo "Importing Lambda Function URL for message-checker into state..."
+            terraform import aws_lambda_function_url.message_checker message-checker
+          else
+            echo "Lambda Function URL for message-checker already in state; skipping."
           fi
 
       - name: Terraform Plan
