@@ -43,7 +43,7 @@ data "aws_iam_policy_document" "ecs_task_execution" {
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
   role       = aws_iam_role.ecs_task_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonecsTaskExecutionRolePolicy"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 data "aws_vpc" "main" {
@@ -62,14 +62,14 @@ data "aws_subnets" "private" {
 
 # ALB for ECS Service and Lambda targets
 resource "aws_lb" "app" {
-  name               = "chatbot-lb"
+  name               = "chatbot-lb1"
   internal           = false
   load_balancer_type = "application"
   subnets            = data.aws_subnets.private.ids
 }
 
 resource "aws_lb_target_group" "evolutionapi" {
-  name     = "tg-evolutionapi"
+  name     = "tg-evolutionapi1"
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.main.id
@@ -181,12 +181,12 @@ resource "aws_elasticache_cluster" "external" {
 }
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
-  name       = "redis-subnet-group"
+  name       = "redis-subnet-group1"
   subnet_ids = data.aws_subnets.private.ids
 }
 
 # DynamoDB Table
-resource "aws_dynamodb_table" "route_times" {
+resource "aws_dynamodb_table" "route_times1" {
   name           = var.dynamodb_table_name
   billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "user_phone"
@@ -231,14 +231,14 @@ resource "aws_lambda_function" "trigger_api" {
   role          = aws_iam_role.lambda_exec.arn
   environment {
     variables = {
-      DYNAMODB_TABLE = aws_dynamodb_table.route_times.name
+      DYNAMODB_TABLE = aws_dynamodb_table.route_times1.name
     }
   }
 }
 
 # IAM Role and Policy for Lambdas
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambdaExecutionRole"
+  name = "lambdaExecutionRole1"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [

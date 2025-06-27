@@ -21,7 +21,7 @@ def lambda_handler(event, context):
     redis_client.rpush(f"messages:{user_phone}", message)
 
     # Call trigger-api
-    resp = requests.post(f"https://{TRIGGER_API_URL}/route_times", json={
+    resp = requests.post(f"https://{TRIGGER_API_URL}/route_times1", json={
         'user_phone': user_phone,
         'message': message
     })
