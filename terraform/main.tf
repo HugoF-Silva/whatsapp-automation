@@ -27,7 +27,7 @@ resource "aws_ecs_task_definition" "evolutionapi" {
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRolelat13"
+  name = "ecsTaskExecutionRolelat14"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution.json
 }
 
@@ -62,14 +62,14 @@ data "aws_subnets" "private" {
 
 # ALB for ECS Service and Lambda targets
 resource "aws_lb" "app" {
-  name               = "chatbot-lblat13"
+  name               = "chatbot-lblat14"
   internal           = false
   load_balancer_type = "application"
   subnets            = data.aws_subnets.private.ids
 }
 
 resource "aws_lb_target_group" "evolutionapi" {
-  name     = "tg-evolutionapilat13"
+  name     = "tg-evolutionapilat14"
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.main.id
@@ -103,7 +103,7 @@ resource "aws_ecs_service" "evolutionapi" {
   launch_type     = "FARGATE"
   network_configuration {
     subnets         = data.aws_subnets.private.ids
-    security_groups = [aws_security_group.redis_sglat13.id]
+    security_groups = [aws_security_group.redis_sglat14.id]
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.evolutionapi.arn
@@ -144,8 +144,8 @@ data "archive_file" "trigger_api" {
   output_path = "${path.module}/trigger_api.zip"
 }
 
-resource "aws_security_group" "redis_sglat13" {
-  name        = "redis_sglat13"
+resource "aws_security_group" "redis_sglat14" {
+  name        = "redis_sglat14"
   description = "Security group for Redis cluster"
   vpc_id      = data.aws_vpc.main.id
 
@@ -178,11 +178,11 @@ resource "aws_elasticache_cluster" "external" {
   parameter_group_name = "default.redis7"
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.redis_subnets.name
-  security_group_ids   = [aws_security_group.redis_sglat13.id]
+  security_group_ids   = [aws_security_group.redis_sglat14.id]
 }
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
-  name       = "redis-subnet-grouplat13"
+  name       = "redis-subnet-grouplat14"
   subnet_ids = data.aws_subnets.private.ids
 }
 
@@ -211,9 +211,9 @@ resource "aws_lambda_function_url" "message_checker" {
   authorization_type = "NONE"
 }
 
-# Lambda: trigger-apilat13
+# Lambda: trigger-apilat14
 resource "aws_lambda_function" "trigger_api" {
-  function_name = "trigger-apilat13"
+  function_name = "trigger-apilat14"
   filename      = "${path.module}/trigger_api.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.9"
@@ -227,7 +227,7 @@ resource "aws_lambda_function" "trigger_api" {
 
 # IAM Role and Policy for Lambdas
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambdaExecutionRolelat13"
+  name = "lambdaExecutionRolelat14"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
