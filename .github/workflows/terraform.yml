@@ -113,11 +113,11 @@ jobs:
           else
             echo "Lambda message-checker already in state; skipping."
           fi
- 
+
           # trigger-api
           if ! terraform state list aws_lambda_function.trigger_api >/dev/null 2>&1; then
             echo "Importing Lambda function trigger-api into state..."
-            terraform import aws_lambda_function.trigger_api trigger-api
+            terraform import aws_lambda_function.trigger_api trigger-apilat11
           else
             echo "Lambda trigger-api already in state; skipping."
           fi
