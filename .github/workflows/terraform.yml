@@ -44,7 +44,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build & Push Docker image
-        # grab the registry from the login-ecr step
+        id: build
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
