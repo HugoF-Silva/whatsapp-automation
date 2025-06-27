@@ -143,8 +143,8 @@ data "archive_file" "trigger_api" {
   output_path = "${path.module}/trigger_api.zip"
 }
 
-resource "aws_security_group" "redis_sg3" {
-  name        = "redis_sg3"
+resource "aws_security_group" "redis_sg4" {
+  name        = "redis_sg4"
   description = "Security group for Redis cluster"
   vpc_id      = data.aws_vpc.main.id
 
@@ -177,7 +177,7 @@ resource "aws_elasticache_cluster" "external" {
   parameter_group_name = "default.redis6.x"
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.redis_subnets.name
-  security_group_ids   = [aws_security_group.redis_sg3.id]
+  security_group_ids   = [aws_security_group.redis_sg4.id]
 }
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
