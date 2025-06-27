@@ -202,9 +202,13 @@ resource "aws_lambda_function" "message_checker" {
   environment {
     variables = {
       REDIS_ENDPOINT = aws_elasticache_cluster.external.cache_nodes[0].address
-      TRIGGER_API_URL = aws_lb.app.dns_name
     }
   }
+}
+
+resource "aws_lambda_function_url" "message_checker" {
+  function_name      = aws_lambda_function.message_checker.function_name
+  authorization_type = "NONE"
 }
 
 # Lambda: trigger-apilat11

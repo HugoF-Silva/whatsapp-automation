@@ -10,3 +10,9 @@ output "message_checker_arn" {
 output "trigger_api_arn" {
   value = aws_lambda_function.trigger_api.arn
 }
+
+# Function URL for EvolutionAPI webhook
+output "message_checker_function_url" {
+  description = "URL to configure in EvolutionAPI webhook settings"
+  value       = aws_lambda_function_url.message_checker.url
+}
