@@ -27,7 +27,7 @@ resource "aws_ecs_task_definition" "evolutionapi" {
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRole3"
+  name = "ecsTaskExecutionRole4"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution.json
 }
 
@@ -62,14 +62,14 @@ data "aws_subnets" "private" {
 
 # ALB for ECS Service and Lambda targets
 resource "aws_lb" "app" {
-  name               = "chatbot-lb3"
+  name               = "chatbot-lb4"
   internal           = false
   load_balancer_type = "application"
   subnets            = data.aws_subnets.private.ids
 }
 
 resource "aws_lb_target_group" "evolutionapi" {
-  name     = "tg-evolutionapi3"
+  name     = "tg-evolutionapi4"
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.main.id
@@ -102,7 +102,7 @@ resource "aws_ecs_service" "evolutionapi" {
   launch_type     = "FARGATE"
   network_configuration {
     subnets         = data.aws_subnets.private.ids
-    security_groups = [aws_security_group.redis_sg3.id]
+    security_groups = [aws_security_group.redis_sg4.id]
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.evolutionapi.arn
@@ -181,7 +181,7 @@ resource "aws_elasticache_cluster" "external" {
 }
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
-  name       = "redis-subnet-group3 "
+  name       = "redis-subnet-group4"
   subnet_ids = data.aws_subnets.private.ids
 }
 
@@ -206,9 +206,9 @@ resource "aws_lambda_function" "message_checker" {
   }
 }
 
-# Lambda: trigger-api
+# Lambda: trigger-api4
 resource "aws_lambda_function" "trigger_api" {
-  function_name = "trigger-api"
+  function_name = "trigger-api4"
   filename      = "${path.module}/trigger_api.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.9"
@@ -222,7 +222,7 @@ resource "aws_lambda_function" "trigger_api" {
 
 # IAM Role and Policy for Lambdas
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambdaExecutionRole3"
+  name = "lambdaExecutionRole4"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
