@@ -93,6 +93,7 @@ resource "aws_lb_listener" "http" {
   }
 }
 
+
 # ECS Service with Auto Scaling
 resource "aws_ecs_service" "evolutionapi" {
   name            = "evolutionapi-service"
