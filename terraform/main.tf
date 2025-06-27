@@ -27,7 +27,7 @@ resource "aws_ecs_task_definition" "evolutionapi" {
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRolelat5"
+  name = "ecsTaskExecutionRolelat6"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution.json
 }
 
@@ -62,14 +62,14 @@ data "aws_subnets" "private" {
 
 # ALB for ECS Service and Lambda targets
 resource "aws_lb" "app" {
-  name               = "chatbot-lblat5"
+  name               = "chatbot-lblat6"
   internal           = false
   load_balancer_type = "application"
   subnets            = data.aws_subnets.private.ids
 }
 
 resource "aws_lb_target_group" "evolutionapi" {
-  name     = "tg-evolutionapilat5"
+  name     = "tg-evolutionapilat6"
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.main.id
@@ -102,7 +102,7 @@ resource "aws_ecs_service" "evolutionapi" {
   launch_type     = "FARGATE"
   network_configuration {
     subnets         = data.aws_subnets.private.ids
-    security_groups = [aws_security_group.redis_sglat5.id]
+    security_groups = [aws_security_group.redis_sglat6.id]
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.evolutionapi.arn
@@ -143,8 +143,8 @@ data "archive_file" "trigger_api" {
   output_path = "${path.module}/trigger_api.zip"
 }
 
-resource "aws_security_group" "redis_sglat5" {
-  name        = "redis_sglat5"
+resource "aws_security_group" "redis_sglat6" {
+  name        = "redis_sglat6"
   description = "Security group for Redis cluster"
   vpc_id      = data.aws_vpc.main.id
 
@@ -177,11 +177,11 @@ resource "aws_elasticache_cluster" "external" {
   parameter_group_name = "default.redis7"
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.redis_subnets.name
-  security_group_ids   = [aws_security_group.redis_sglat5.id]
+  security_group_ids   = [aws_security_group.redis_sglat6.id]
 }
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
-  name       = "redis-subnet-grouplat5"
+  name       = "redis-subnet-grouplat6"
   subnet_ids = data.aws_subnets.private.ids
 }
 
@@ -206,9 +206,9 @@ resource "aws_lambda_function" "message_checker" {
   }
 }
 
-# Lambda: trigger-apilat5
+# Lambda: trigger-apilat6
 resource "aws_lambda_function" "trigger_api" {
-  function_name = "trigger-apilat5"
+  function_name = "trigger-apilat6"
   filename      = "${path.module}/trigger_api.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.9"
@@ -222,7 +222,7 @@ resource "aws_lambda_function" "trigger_api" {
 
 # IAM Role and Policy for Lambdas
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambdaExecutionRolelat5"
+  name = "lambdaExecutionRolelat6"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
