@@ -117,7 +117,7 @@ jobs:
           # trigger-api
           if ! terraform state list aws_lambda_function.trigger_api >/dev/null 2>&1; then
             echo "Importing Lambda function trigger-api into state..."
-            terraform import aws_lambda_function.trigger_api trigger-apilat15
+            terraform import aws_lambda_function.trigger_api trigger-apilat16
           else
             echo "Lambda trigger-api already in state; skipping."
           fi
