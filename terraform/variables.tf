@@ -15,12 +15,6 @@ variable "cache_cluster_id" {
   default     = "whatsapp-cache"
 }
 
-variable "dynamodb_table_name" {
-  description = "DynamoDB table for route times and estimates"
-  type        = string
-  default     = "RouteTimesTable"
-}
-
 variable "lambda_message_checker_s3_key" {
   description = "S3 key for message-checker Lambda zip"
   type        = string

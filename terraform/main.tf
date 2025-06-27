@@ -27,7 +27,7 @@ resource "aws_ecs_task_definition" "evolutionapi" {
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRole2"
+  name = "ecsTaskExecutionRole3"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution.json
 }
 
@@ -62,14 +62,14 @@ data "aws_subnets" "private" {
 
 # ALB for ECS Service and Lambda targets
 resource "aws_lb" "app" {
-  name               = "chatbot-lb1"
+  name               = "chatbot-lb3"
   internal           = false
   load_balancer_type = "application"
   subnets            = data.aws_subnets.private.ids
 }
 
 resource "aws_lb_target_group" "evolutionapi" {
-  name     = "tg-evolutionapi1"
+  name     = "tg-evolutionapi3"
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.main.id
@@ -102,7 +102,7 @@ resource "aws_ecs_service" "evolutionapi" {
   launch_type     = "FARGATE"
   network_configuration {
     subnets         = data.aws_subnets.private.ids
-    security_groups = [aws_security_group.redis_sg2.id]
+    security_groups = [aws_security_group.redis_sg3.id]
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.evolutionapi.arn
@@ -143,8 +143,8 @@ data "archive_file" "trigger_api" {
   output_path = "${path.module}/trigger_api.zip"
 }
 
-resource "aws_security_group" "redis_sg2" {
-  name        = "redis_sg2"
+resource "aws_security_group" "redis_sg3" {
+  name        = "redis_sg3"
   description = "Security group for Redis cluster"
   vpc_id      = data.aws_vpc.main.id
 
@@ -177,28 +177,12 @@ resource "aws_elasticache_cluster" "external" {
   parameter_group_name = "default.redis6.x"
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.redis_subnets.name
-  security_group_ids   = [aws_security_group.redis_sg2.id]
+  security_group_ids   = [aws_security_group.redis_sg3.id]
 }
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
-  name       = "redis-subnet-group1"
+  name       = "redis-subnet-group3 "
   subnet_ids = data.aws_subnets.private.ids
-}
-
-# DynamoDB Table
-resource "aws_dynamodb_table" "route_times1" {
-  name           = var.dynamodb_table_name
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "user_phone"
-  range_key      = "timestamp"
-  attribute {
-    name = "user_phone"
-    type = "S"
-  }
-  attribute {
-    name = "timestamp"
-    type = "N"
-  }
 }
 
 data "archive_file" "message_checker" {
@@ -231,14 +215,14 @@ resource "aws_lambda_function" "trigger_api" {
   role          = aws_iam_role.lambda_exec.arn
   environment {
     variables = {
-      DYNAMODB_TABLE = aws_dynamodb_table.route_times1.name
+      DYNAMODB_TABLE = "test"
     }
   }
 }
 
 # IAM Role and Policy for Lambdas
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambdaExecutionRole1"
+  name = "lambdaExecutionRole3"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
