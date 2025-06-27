@@ -108,7 +108,7 @@ jobs:
         run: |
           if ! terraform state list aws_lambda_function.message_checker >/dev/null 2>&1; then
             echo "Importing existing Lambda function (${TF_VAR_lambda_message_checker_function_name}) into state..."
-            terraform import aws_lambda_function.message_checker ${TF_VAR_lambda_message_checker_function_name}
+            terraform import aws_lambda_function.message_checker "${TF_VAR_lambda_message_checker_function_name}"
           else
             echo "Lambda function already imported; skipping."
           fi
