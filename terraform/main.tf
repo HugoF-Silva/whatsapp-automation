@@ -190,7 +190,12 @@ resource "aws_security_group" "ecs_tasks" {
   name        = "ecs-tasks-sg"
   vpc_id      = data.aws_vpc.main.id
   description = "Allow ECS tasks to communicate with VPC endpoints"
-
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_tasks.id]
+  }
   egress {
     from_port   = 0
     to_port     = 0
@@ -205,12 +210,6 @@ resource "aws_vpc_endpoint" "ecr_api" {
   vpc_endpoint_type = "Interface"
   subnet_ids        = data.aws_subnets.private.ids
   security_group_ids = [aws_security_group.vpce.id]
-  ingress {
-  from_port       = 443
-  to_port         = 443
-  protocol        = "tcp"
-  security_groups = [aws_security_group.ecs_tasks.id]
-}
 }
 
 
@@ -220,12 +219,6 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_endpoint_type = "Interface"
   subnet_ids        = data.aws_subnets.private.ids
   security_group_ids = [aws_security_group.vpce.id]
-  ingress {
-  from_port       = 443
-  to_port         = 443
-  protocol        = "tcp"
-  security_groups = [aws_security_group.ecs_tasks.id]
-}
 }
 
 data "aws_route_tables" "private" {
