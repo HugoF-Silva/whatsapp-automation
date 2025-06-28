@@ -2,31 +2,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-# NAT Gateway for private subnet egress
-resource "aws_eip" "nat_eip" {
-  vpc = true
-}
-
-resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.nat_eip.id
-  subnet_id     = data.aws_subnet_ids.public.ids[0]
-}
-
-resource "aws_route_table" "private" {
-  vpc_id = data.aws_vpc.main.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat.id
-  }
-}
-
-resource "aws_route_table_association" "private" {
-  count          = length(data.aws_subnet_ids.private.ids)
-  subnet_id      = data.aws_subnet_ids.private.ids[count.index]
-  route_table_id = aws_route_table.private.id
-}
-
 # ECS Cluster for EvolutionAPI
 resource "aws_ecs_cluster" "evolutionapi" {
   name = "evolutionapi-cluster"
@@ -52,7 +27,7 @@ resource "aws_ecs_task_definition" "evolutionapi" {
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRolelat18"
+  name = "ecsTaskExecutionRolelat19"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution.json
 }
 
@@ -87,14 +62,14 @@ data "aws_subnets" "private" {
 
 # ALB for ECS Service and Lambda targets
 resource "aws_lb" "app" {
-  name               = "chatbot-lblat18"
+  name               = "chatbot-lblat19"
   internal           = false
   load_balancer_type = "application"
   subnets            = data.aws_subnets.private.ids
 }
 
 resource "aws_lb_target_group" "evolutionapi" {
-  name     = "tg-evolutionapilat18"
+  name     = "tg-evolutionapilat19"
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.main.id
@@ -121,14 +96,14 @@ resource "aws_lb_listener" "http" {
 
 # ECS Service with Auto Scaling
 resource "aws_ecs_service" "evolutionapi" {
-  name            = "evolutionapi-servicelat18"
+  name            = "evolutionapi-servicelat19"
   cluster         = aws_ecs_cluster.evolutionapi.id
   task_definition = aws_ecs_task_definition.evolutionapi.arn
   desired_count   = 1
   launch_type     = "FARGATE"
   network_configuration {
     subnets         = data.aws_subnets.private.ids
-    security_groups = [aws_security_group.redis_sglat18.id]
+    security_groups = [aws_security_group.redis_sglat19.id]
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.evolutionapi.arn
@@ -169,8 +144,8 @@ data "archive_file" "trigger_api" {
   output_path = "${path.module}/trigger_api.zip"
 }
 
-resource "aws_security_group" "redis_sglat18" {
-  name        = "redis_sglat18"
+resource "aws_security_group" "redis_sglat19" {
+  name        = "redis_sglat19"
   description = "Security group for Redis cluster"
   vpc_id      = data.aws_vpc.main.id
 
@@ -194,6 +169,47 @@ resource "aws_security_group" "redis_sglat18" {
   }
 }
 
+resource "aws_security_group" "vpcelat19" {
+  name   = "vpce-sglat19"
+  vpc_id = data.aws_vpc.main.id
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.redis_sglat19.id]  # or whatever SG your tasks use
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id            = data.aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.aws_region}.ecr.api"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = data.aws_subnets.private.ids
+  security_group_ids = [aws_security_group.vpce.id]
+}
+
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id            = data.aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.aws_region}.ecr.dkr"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = data.aws_subnets.private.ids
+  security_group_ids = [aws_security_group.vpce.id]
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = data.aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.aws_region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = data.aws_route_tables.private.ids
+}
+
 # ElastiCache Redis for external caching
 resource "aws_elasticache_cluster" "external" {
   cluster_id           = var.cache_cluster_id
@@ -203,11 +219,11 @@ resource "aws_elasticache_cluster" "external" {
   parameter_group_name = "default.redis7"
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.redis_subnets.name
-  security_group_ids   = [aws_security_group.redis_sglat18.id]
+  security_group_ids   = [aws_security_group.redis_sglat19.id]
 }
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
-  name       = "redis-subnet-grouplat18"
+  name       = "redis-subnet-grouplat19"
   subnet_ids = data.aws_subnets.private.ids
 }
 
@@ -236,9 +252,9 @@ resource "aws_lambda_function_url" "message_checker" {
   authorization_type = "NONE"
 }
 
-# Lambda: trigger-apilat18
+# Lambda: trigger-apilat19
 resource "aws_lambda_function" "trigger_api" {
-  function_name = "trigger-apilat18"
+  function_name = "trigger-apilat19"
   filename      = "${path.module}/trigger_api.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.9"
@@ -252,7 +268,7 @@ resource "aws_lambda_function" "trigger_api" {
 
 # IAM Role and Policy for Lambdas
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambdaExecutionRolelat18"
+  name = "lambdaExecutionRolelat19"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
