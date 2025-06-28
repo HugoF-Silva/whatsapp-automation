@@ -27,7 +27,7 @@ resource "aws_ecs_task_definition" "evolutionapi" {
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRolelat22"
+  name = "ecsTaskExecutionRolelat23"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution.json
 }
 
@@ -62,14 +62,14 @@ data "aws_subnets" "private" {
 
 # ALB for ECS Service and Lambda targets
 resource "aws_lb" "app" {
-  name               = "chatbot-lblat22"
+  name               = "chatbot-lblat23"
   internal           = false
   load_balancer_type = "application"
   subnets            = data.aws_subnets.private.ids
 }
 
 resource "aws_lb_target_group" "evolutionapi" {
-  name     = "tg-evolutionapilat22"
+  name     = "tg-evolutionapilat23"
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.main.id
@@ -95,7 +95,7 @@ resource "aws_lb_listener" "http" {
 
 # ECS Service with Auto Scaling
 resource "aws_ecs_service" "evolutionapi" {
-  name            = "evolutionapi-servicelat22"
+  name            = "evolutionapi-servicelat23"
   cluster         = aws_ecs_cluster.evolutionapi.id
   task_definition = aws_ecs_task_definition.evolutionapi.arn
   desired_count   = 1
@@ -143,8 +143,8 @@ data "archive_file" "trigger_api" {
   output_path = "${path.module}/trigger_api.zip"
 }
 
-resource "aws_security_group" "redis_sglat22" {
-  name        = "redis_sglat22"
+resource "aws_security_group" "redis_sglat23" {
+  name        = "redis_sglat23"
   description = "Security group for Redis cluster"
   vpc_id      = data.aws_vpc.main.id
 
@@ -169,7 +169,7 @@ resource "aws_security_group" "redis_sglat22" {
 }
 
 resource "aws_security_group" "vpce" {
-  name   = "vpce-sglat22"
+  name   = "vpce-sglat23"
   vpc_id = data.aws_vpc.main.id
 
   ingress {
@@ -222,7 +222,7 @@ data "aws_route_tables" "private" {
   }
 }
 
-resource "aws_vpc_endpoint" "s3" {
+resource "aws_vpc_endpoint" "s3lat23" {
   vpc_id            = data.aws_vpc.main.id
   service_name      = "com.amazonaws.${var.aws_region}.s3"
   vpc_endpoint_type = "Gateway"
@@ -238,11 +238,11 @@ resource "aws_elasticache_cluster" "external" {
   parameter_group_name = "default.redis7"
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.redis_subnets.name
-  security_group_ids   = [aws_security_group.redis_sglat22.id]
+  security_group_ids   = [aws_security_group.redis_sglat23.id]
 }
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
-  name       = "redis-subnet-grouplat22"
+  name       = "redis-subnet-grouplat23"
   subnet_ids = data.aws_subnets.private.ids
 }
 
@@ -271,9 +271,9 @@ resource "aws_lambda_function_url" "message_checker" {
   authorization_type = "NONE"
 }
 
-# Lambda: trigger-apilat22
+# Lambda: trigger-apilat23
 resource "aws_lambda_function" "trigger_api" {
-  function_name = "trigger-apilat22"
+  function_name = "trigger-apilat23"
   filename      = "${path.module}/trigger_api.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.9"
@@ -287,7 +287,7 @@ resource "aws_lambda_function" "trigger_api" {
 
 # IAM Role and Policy for Lambdas
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambdaExecutionRolelat22"
+  name = "lambdaExecutionRolelat23"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
