@@ -195,6 +195,7 @@ resource "aws_vpc_endpoint" "ecr_api" {
   security_group_ids = [aws_security_group.vpce.id]
 }
 
+
 resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_id            = data.aws_vpc.main.id
   service_name      = "com.amazonaws.${var.aws_region}.ecr.dkr"
