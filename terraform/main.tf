@@ -93,7 +93,6 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-
 # ECS Service with Auto Scaling
 resource "aws_ecs_service" "evolutionapi" {
   name            = "evolutionapi-servicelat20"
@@ -103,7 +102,7 @@ resource "aws_ecs_service" "evolutionapi" {
   launch_type     = "FARGATE"
   network_configuration {
     subnets         = data.aws_subnets.private.ids
-    security_groups = [aws_security_group.redis_sglat20.id]
+    security_groups = [aws_security_group.ecs_tasks.id]
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.evolutionapi.arn
@@ -187,12 +186,31 @@ resource "aws_security_group" "vpce" {
   }
 }
 
+resource "aws_security_group" "ecs_tasks" {
+  name        = "ecs-tasks-sg"
+  vpc_id      = data.aws_vpc.main.id
+  description = "Allow ECS tasks to communicate with VPC endpoints"
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_vpc_endpoint" "ecr_api" {
   vpc_id            = data.aws_vpc.main.id
   service_name      = "com.amazonaws.${var.aws_region}.ecr.api"
   vpc_endpoint_type = "Interface"
   subnet_ids        = data.aws_subnets.private.ids
   security_group_ids = [aws_security_group.vpce.id]
+  ingress {
+  from_port       = 443
+  to_port         = 443
+  protocol        = "tcp"
+  security_groups = [aws_security_group.ecs_tasks.id]
+}
 }
 
 
@@ -202,6 +220,12 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_endpoint_type = "Interface"
   subnet_ids        = data.aws_subnets.private.ids
   security_group_ids = [aws_security_group.vpce.id]
+  ingress {
+  from_port       = 443
+  to_port         = 443
+  protocol        = "tcp"
+  security_groups = [aws_security_group.ecs_tasks.id]
+}
 }
 
 data "aws_route_tables" "private" {
