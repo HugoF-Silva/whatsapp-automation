@@ -53,16 +53,6 @@ data "aws_vpc" "main" {
   }
 }
 
-resource "aws_vpc_dns_support" "main" {
-  vpc_id = data.aws_vpc.main.id
-  enable = true
-}
-
-resource "aws_vpc_dns_hostnames" "main" {
-  vpc_id = data.aws_vpc.main.id
-  enable = true
-}
-
 data "aws_subnets" "private" {
   filter {
     name   = "vpc-id"
@@ -119,7 +109,7 @@ resource "aws_ecs_service" "evolutionapi" {
     container_name   = "evolutionapi"
     container_port   = 80
   }
-  depends_on = [aws_lb_listener.http]
+  depends_on = [aws_lb_listener.http, aws_security_group.ecs_tasks, data.aws_subnets.private]
 }
 
 resource "aws_appautoscaling_target" "ecs" {
@@ -178,6 +168,18 @@ resource "aws_security_group" "redis_sglat29" {
   }
 }
 
+resource "aws_security_group" "ecs_tasks" {
+  name        = "ecs-tasks-sglat29"
+  vpc_id      = data.aws_vpc.main.id
+  description = "Allow ECS tasks to communicate with VPC endpoints"
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_security_group" "vpce" {
   name   = "vpce-sglat29"
   vpc_id = data.aws_vpc.main.id
@@ -194,18 +196,7 @@ resource "aws_security_group" "vpce" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-}
-
-resource "aws_security_group" "ecs_tasks" {
-  name        = "ecs-tasks-sglat29"
-  vpc_id      = data.aws_vpc.main.id
-  description = "Allow ECS tasks to communicate with VPC endpoints"
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  depends_on = [aws_security_group.ecs_tasks]
 }
 
 resource "aws_vpc_endpoint" "ecr_api" {
@@ -215,7 +206,6 @@ resource "aws_vpc_endpoint" "ecr_api" {
   subnet_ids        = data.aws_subnets.private.ids
   security_group_ids = [aws_security_group.vpce.id]
 }
-
 
 resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_id            = data.aws_vpc.main.id
