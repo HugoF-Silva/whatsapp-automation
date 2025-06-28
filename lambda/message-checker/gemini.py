@@ -1,6 +1,10 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_redis import RedisChatMessageHistory
+
 import json
 
 system_prompt = """
@@ -52,7 +56,7 @@ O seu papel é SEMPRE, independente do input, independente da pergunta, independ
 """
 
 class IntentionClassifier:
-    def __init__(self, available_modes):
+    def __init__(self):
         # Instanciando a classe ChatOpenAI
         self.llm = self._set_llm()
 
@@ -70,6 +74,9 @@ class IntentionClassifier:
                 | StrOutputParser()
         )
 
+        self.chain_with_history = RunnableWithMessageHistory(self.scope_chain, self._get_redis_history, input_messages_key="input", history_messages_key="history")
+
+
     def _set_llm(self):
         try:
             self.llm = ChatGoogleGenerativeAI(
@@ -83,6 +90,9 @@ class IntentionClassifier:
         except Exception as e:
             raise RuntimeError(f"LLM was not defined. Error: {e}")
 
+    def _get_redis_history(self, session_id: str) -> BaseChatMessageHistory:
+        return RedisChatMessageHistory(session_id, redis_url=REDIS_URL)
+
     def _regenerate_json(self, previous_response):
         response = self.llm.invoke(
             f'''
@@ -95,7 +105,7 @@ class IntentionClassifier:
     
     def execute(self, question):
         print(f"assistant_scope input: {question}")
-        output_scope = self.scope_chain.invoke(question)
+        output_scope = self.chain_with_history.invoke({"input": question}, config={"configurable": {"session_id": f"{cripto_number}"}})
         try: 
             json.loads(output_scope)
         except json.decoder.JSONDecodeError:

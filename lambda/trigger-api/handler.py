@@ -1,39 +1,216 @@
-import os
-import json
-import boto3
-import redis
+from fastapi import FastAPI, Query, Depends, HTTPException, status, Request
+from schema import (
+    AnnotateEventRequest, EstimateRequest, EstimateResponse, HealthCheckResponse, 
+    AllEstimatesResponse, UnitEstimates, RegisterUnitRequest, RegisterUnitResponse,
+    RouteTimeRequest, RouteTimeResponse, RouteTimeResult
+)
+from data_store import DataStore
+from models import WaitTimeEstimator, AdminConfig
+from datetime import datetime, timezone
+from utils import get_route_time
+import requests
+import httpx
+from jose import jwt
+from mangum import Mangum
 
-# Initialize DynamoDB table
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
-# Local cache (ElastiCache)
-redis_client = redis.Redis(host=os.environ['REDIS_ENDPOINT'], port=6379)
+app = FastAPI()
+datastore = DataStore()
+estimator = WaitTimeEstimator(datastore)
+adminconfig = AdminConfig()
 
+from fastapi.middleware.cors import CORSMiddleware
+import logging
+from decimal import Decimal
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def lambda_handler(event, context):
-    body = json.loads(event['body'])
-    user_phone = body['user_phone']
-    message    = body['message']
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://tempo-flax-kappa.vercel.app",   # Your Vercel app
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    cache_key = f"response:{user_phone}:{message}"
-    # Check cache
-    cached = redis_client.get(cache_key)
-    if cached:
-        return {'statusCode': 200, 'body': cached.decode()}
+async def get_jwk_keys():
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(adminconfig.JWKS_URL)
+        return resp.json()["keys"]
 
-    # Compute route times & wait estimates (placeholder)
-    # ... call Waze API, compute wait times, store in DynamoDB ...
-    result = { 'eta': 15, 'wait_estimate': 30 }
+async def verify_jwt(request: Request):
+    auth = request.headers.get("authorization")
+    if not auth or not auth.lower().startswith("bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing or invalid authorization header")
+    token = auth.split(" ")[1]
+    try:
+        unverified_header = jwt.get_unverified_header(token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token header")
+    jwks = await get_jwk_keys()
+    rsa_key = {}
+    for key in jwks:
+        if key["kid"] == unverified_header["kid"]:
+            rsa_key = {
+                "kty": key["kty"],
+                "kid": key["kid"],
+                "use": key["use"],
+                "n": key["n"],
+                "e": key["e"]
+            }
+    if not rsa_key:
+        raise HTTPException(status_code=401, detail="Public key not found in JWKS")
+    try:
+        payload = jwt.decode(
+            token,
+            rsa_key,
+            algorithms=["RS256"],
+            audience=adminconfig.COGNITO_AUDIENCE,   # your clientId
+            issuer=adminconfig.COGNITO_ISSUER
+        )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.JWTClaimsError:
+        raise HTTPException(status_code=401, detail="Invalid claims")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return payload  # You can return user info from here
 
-    # Store in DynamoDB
-    table.put_item(Item={
-        'user_phone': user_phone,
-        'timestamp': int(time.time()),
-        'eta': result['eta'],
-        'wait_estimate': result['wait_estimate']
-    })
+@app.get("/health", response_model=HealthCheckResponse)
+def health():
+    return HealthCheckResponse(status="ok")
 
-    # Cache the response
-    redis_client.setex(cache_key, 600, json.dumps(result))
+@app.get("/api/protected")
+async def protected_route(payload=Depends(verify_jwt)):
+    return {"status": "ok", "user": payload}
 
-    return { 'statusCode': 200, 'body': json.dumps(result) }
+@app.post("/register_unit", response_model=RegisterUnitResponse)
+def register_unit(req: RegisterUnitRequest):
+    # For simplicity, skip geocoding if no lat/lng given
+    item = datastore.register_unit(
+        unit=req.unit,
+        address=req.address,
+        postal_code=req.postal_code,
+        latitude=Decimal(str(req.latitude)),
+        longitude=Decimal(str(req.longitude))
+    )
+    return RegisterUnitResponse(
+        success=True,
+        unit=req.unit,
+        lat=item.get("lat"),
+        lng=item.get("lng"),
+        message="Unit registered"
+    )
+
+@app.post("/annotate")
+def annotate_event(event: AnnotateEventRequest, payload=Depends(verify_jwt)):
+    dt = datastore.ingest_event(
+        pseudonym=event.pseudonym,
+        unit=event.unit,
+        event_type=event.event_type,
+        risk_color=event.risk_color,
+        timestamp=event.timestamp
+    )
+    return {"message": "Event processed.", "delta_t": dt}
+
+@app.post("/estimate", response_model=EstimateResponse)
+def estimate_wait_time(req: EstimateRequest):
+    est = estimator.estimate_wait_time(
+        unit=req.unit,
+        risk_color=req.risk_color,
+        query_time=req.query_time
+    )
+    return EstimateResponse(
+        estimated_wait=est
+    )
+
+@app.get("/all_estimates", response_model=AllEstimatesResponse)
+def all_estimates(query_time: datetime = Query(...)):
+    units = datastore.list_units()
+    estimates = []
+    for unit in units:
+        # logger.info(f"\nunit {unit}, blue")
+        # blue_est = estimator.estimate_wait_time(unit, 'b', query_time)
+        blue_est = 0
+        # logger.info(f"\nunit {unit}, green")
+        green_est = estimator.estimate_wait_time(unit, 'g', query_time)
+        # logger.info(f"\nunit {unit}, yellow")
+        # yellow_est = estimator.estimate_wait_time(unit, 'y', query_time)
+        yellow_est = 0
+        # logger.info(f"\nunit {unit}, orange")
+        # orange_est = estimator.estimate_wait_time(unit, 'o', query_time)
+        orange_est = 0
+        # logger.info(f"\nunit {unit}, red")
+        # red_est = estimator.estimate_wait_time(unit, 'r', query_time)
+        red_est = 0
+        estimates.append(
+            UnitEstimates(
+                unit=unit,
+                blue=blue_est,
+                green=green_est,
+                yellow=yellow_est,
+                orange=orange_est,
+                red=red_est
+            )
+        )
+    estimates.sort(key=lambda x: x.green)
+    return AllEstimatesResponse(estimates=estimates, query_time=query_time)
+
+@app.post("/route_times")
+def route_times(req: RouteTimeRequest):
+    units = datastore.get_all_units_with_locations()
+    results = []
+    for unit_info in units:
+        print(f"NO DUPLICATE -- UNIT NAME: {unit_info.get('unit')}")
+        lat, lng = unit_info.get("lat"), unit_info.get("lng")
+        if lat is None or lng is None:
+            continue
+        print(f"user lat lon: {req.latitude, req.longitude}")
+        travel_time = get_route_time(
+            req.latitude,
+            req.longitude,
+            lat,
+            lng
+        )
+        print(f"travel_time: {travel_time}")
+        results.append(
+            {
+                "unit": unit_info["unit"],
+                "travel_time_min": travel_time
+            }
+        )
+    # Store or overwrite for user
+    datastore.store_user_route_times(req.user_phone, req.latitude, req.longitude, results)
+    return {"message": "Route times stored."}
+
+@app.get("/route_times/{user_phone}", response_model=RouteTimeResponse)
+def get_user_route_times(user_phone: str):
+    items = datastore.get_user_route_times(user_phone)
+    results = [
+        RouteTimeResult(
+            unit=item["unit"],
+            travel_time_min=item["travel_time_min"],
+            timestamp=item["timestamp"]
+        )
+        for item in items
+    ]
+    # You may also want to include last used location/timestamp, etc.
+    return RouteTimeResponse(
+        user_phone=user_phone,
+        results=results
+    )
+
+@app.get("/units")
+def list_units():
+    items = datastore.get_all_units_with_locations()
+    return {"units": [{"unit": i["unit"]} for i in items if "unit" in i]}
+
+@app.get("/cep_lookup")
+def cep_lookup(cep: str):
+    CEP_ABERTO_TOKEN = "bf2a40be4391c25294e40a44317123a7"
+    url = f"https://www.cepaberto.com/api/v3/cep?cep={cep}"
+    headers = {"Authorization": f"Token token={CEP_ABERTO_TOKEN}"}
+    resp = requests.get(url, headers=headers)
+    return resp.json() 
+
+handler = Mangum(app)

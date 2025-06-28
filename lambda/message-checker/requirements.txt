@@ -1,3 +1,5 @@
 langchain-google-genai
 langchain-core
 langchain
+pydantic-settings
+langchain-redis

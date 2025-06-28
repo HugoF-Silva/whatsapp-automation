@@ -2,6 +2,48 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_vpc" "main" {
+  default = true
+}
+
+data "aws_subnet_ids" "public" {
+  vpc_id = data.aws_vpc.main.id
+  filter {
+    name   = "mapPublicIpOnLaunch"
+    values = ["true"]
+  }
+}
+
+data "aws_subnet_ids" "private" {
+  vpc_id = data.aws_vpc.main.id
+  tags = { "Tier" = "private" }
+}
+
+# NAT Gateway for private subnet egress
+resource "aws_eip" "nat_eip" {
+  vpc = true
+}
+
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = data.aws_subnet_ids.public.ids[0]
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = data.aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat.id
+  }
+}
+
+resource "aws_route_table_association" "private" {
+  count          = length(data.aws_subnet_ids.private.ids)
+  subnet_id      = data.aws_subnet_ids.private.ids[count.index]
+  route_table_id = aws_route_table.private.id
+}
+
 # ECS Cluster for EvolutionAPI
 resource "aws_ecs_cluster" "evolutionapi" {
   name = "evolutionapi-cluster"
