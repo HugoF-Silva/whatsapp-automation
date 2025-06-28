@@ -204,6 +204,13 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   security_group_ids = [aws_security_group.vpce.id]
 }
 
+data "aws_route_tables" "private" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.main.id]
+  }
+}
+
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = data.aws_vpc.main.id
   service_name      = "com.amazonaws.${var.aws_region}.s3"
