@@ -2,23 +2,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_vpc" "main" {
-  default = true
-}
-
-data "aws_subnet_ids" "public" {
-  vpc_id = data.aws_vpc.main.id
-  filter {
-    name   = "mapPublicIpOnLaunch"
-    values = ["true"]
-  }
-}
-
-data "aws_subnet_ids" "private" {
-  vpc_id = data.aws_vpc.main.id
-  tags = { "Tier" = "private" }
-}
-
 # NAT Gateway for private subnet egress
 resource "aws_eip" "nat_eip" {
   vpc = true
