@@ -7,13 +7,6 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
-
 # Single Security Group for all components
 resource "aws_security_group" "all_in_one" {
   name        = "all-in-one-sg-${var.deployment_id}"
@@ -77,7 +70,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
 # ElastiCache Redis
 resource "aws_elasticache_subnet_group" "default" {
   name       = "default-elasticache-subnet-${var.deployment_id}"
-  subnet_ids = data.aws_subnets.default.ids
+  subnet_ids = var.public_subnet_ids
 }
 
 resource "aws_elasticache_cluster" "external" {
@@ -96,7 +89,7 @@ resource "aws_lb" "app" {
   name               = "evolutionapi-lb-${var.deployment_id}"
   internal           = false
   load_balancer_type = "application"
-  subnets            = data.aws_subnets.default.ids
+  subnets            = var.public_subnet_ids
   security_groups    = [aws_security_group.all_in_one.id]
 }
 
@@ -130,7 +123,7 @@ resource "aws_ecs_service" "evolutionapi" {
   desired_count   = 1
   launch_type     = "FARGATE"
   network_configuration {
-    subnets         = data.aws_subnets.default.ids
+    subnets         = var.public_subnet_ids
     security_groups = [aws_security_group.all_in_one.id]
   }
   load_balancer {
