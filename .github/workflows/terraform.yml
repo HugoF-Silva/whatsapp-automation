@@ -70,6 +70,22 @@
             # push into your ECR postgres repo
             docker push ${{ steps.login-ecr.outputs.registry }}/postgres:$PG_TAG
 
+        
+        - name: Mirror Redis to ECR
+          run: |
+            # choose the Redis tag you want to mirror:
+            REDIS_TAG=7.0-alpine
+
+            # 1) pull from Docker Hub
+            docker pull redis:$REDIS_TAG
+
+            # 2) tag for your ECR repo
+            docker tag \
+              redis:$REDIS_TAG \
+              ${{ steps.login-ecr.outputs.registry }}/redis:$REDIS_TAG
+
+            # 3) push into your ECR redis repo
+            docker push ${{ steps.login-ecr.outputs.registry }}/redis:$REDIS_TAG
 
         - name: Set Terraform env
           run: |
