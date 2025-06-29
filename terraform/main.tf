@@ -46,6 +46,14 @@ resource "aws_ecs_task_definition" "evolutionapi" {
       environment = [{ name = "REDIS_URL", value = aws_elasticache_cluster.external.cache_nodes[0].address }]
     }
   ])
+  "logConfiguration": {
+  "logDriver": "awslogs",
+  "options": {
+    "awslogs-group":    "/ecs/evolutionapi",
+    "awslogs-region":   "us-east-1",
+    "awslogs-stream-prefix": "ecs"
+  }
+}
 }
 
 resource "aws_iam_role" "ecs_task_execution" {
