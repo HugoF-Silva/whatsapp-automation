@@ -49,7 +49,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker compose -f evolution-api-main/docker-compose.yaml build
+          docker compose -f evolution-api-main/docker-compose.yaml build --no-cache
           docker compose -f evolution-api-main/docker-compose.yaml push
 
           # expose to Terraform
