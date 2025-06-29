@@ -27,6 +27,11 @@ resource "aws_security_group" "all_in_one" {
 }
 
 # ECS Cluster and Task Definition
+resource "aws_cloudwatch_log_group" "evolutionapi" {
+  name              = "/ecs/evolutionapi"
+  retention_in_days = 1
+}
+
 resource "aws_ecs_cluster" "evolutionapi" {
   name = "evolutionapi-cluster"
 }
