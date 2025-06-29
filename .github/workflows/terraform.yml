@@ -42,16 +42,19 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build & Push Docker image
-        id: build
+      - name: Write .env file from secret
+        run: echo "${{ secrets.ENVFILE }}" > .env
+
+      - name: Build & Push Docker image (compose)
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker build \
-            -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
-            ./evolution-api-main
+          docker-compose -f docker-compose.yaml build
+          docker-compose -f docker-compose.yaml push
 
-          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          # or if you're using a dev compose:
+          # docker-compose -f docker-compose.dev.yaml build
+          # docker-compose -f docker-compose.dev.yaml push
 
           # expose to Terraform
           echo "image_uri=$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}" \

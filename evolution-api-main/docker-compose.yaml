@@ -38,9 +38,9 @@ services:
     restart: always
     ports:
       - 5432:5432
+    env_file:
+      - .env
     environment:
-      - POSTGRES_USER=user-post
-      - POSTGRES_PASSWORD=jdjVjSGWwR9j3MyYgR
       - POSTGRES_DB=evolution
       - POSTGRES_HOST_AUTH_METHOD=trust
     volumes:
