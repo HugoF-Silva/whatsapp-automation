@@ -43,18 +43,21 @@ resource "aws_ecs_task_definition" "evolutionapi" {
       name      = "evolutionapi"
       image     = var.evolutionapi_image
       portMappings = [{ containerPort = 80, hostPort = 80 }]
-      environment = [{ name = "REDIS_URL", value = aws_elasticache_cluster.external.cache_nodes[0].address }]
+      environment = [
+        { name = "REDIS_URL", value = aws_elasticache_cluster.external.cache_nodes[0].address }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = "/ecs/evolutionapi"
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
-  "logConfiguration": {
-  "logDriver": "awslogs",
-  "options": {
-    "awslogs-group":    "/ecs/evolutionapi",
-    "awslogs-region":   "us-east-1",
-    "awslogs-stream-prefix": "ecs"
-  }
 }
-}
+
 
 resource "aws_iam_role" "ecs_task_execution" {
   name = "ecsTaskExecutionRole-${var.deployment_id}"
