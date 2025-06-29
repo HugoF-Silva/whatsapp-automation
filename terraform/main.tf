@@ -124,7 +124,7 @@ resource "aws_lb_listener" "http" {
 
 # ECS Service with Scaling
 resource "aws_ecs_service" "evolutionapi" {
-  name            = "evolutionapi-service"
+  name            = "evolutionapi-service-${var.deployment_id}"
   cluster         = aws_ecs_cluster.evolutionapi.id
   task_definition = aws_ecs_task_definition.evolutionapi.arn
   desired_count   = 1
