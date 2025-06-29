@@ -55,6 +55,7 @@ jobs:
           docker compose -f docker-compose.yaml build --no-cache
 
       - name: Tag & Push to ECR
+        id: push-image
         env:
           ECR_REGISTRY:   ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
@@ -76,7 +77,7 @@ jobs:
           echo "AWS_REGION=${{ env.AWS_REGION }}"                >> $GITHUB_ENV
           echo "AWS_DEFAULT_REGION=${{ env.AWS_REGION }}"        >> $GITHUB_ENV
           echo "TF_VAR_aws_region=${{ env.AWS_REGION }}"         >> $GITHUB_ENV
-          echo "TF_VAR_evolutionapi_image=${{ steps.build.outputs.image_uri }}" \
+          echo "TF_VAR_evolutionapi_image=${{ steps.push-image.outputs.image_uri }}" \
                                                                   >> $GITHUB_ENV
           echo "TF_VAR_deployment_id=${{ github.run_id }}" >> $GITHUB_ENV
                                                                     
