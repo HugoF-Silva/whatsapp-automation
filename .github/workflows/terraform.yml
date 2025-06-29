@@ -1,131 +1,121 @@
-name: Terraform CI/CD
+  name: Terraform CI/CD
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  on:
+    push:
+      branches: [ main ]
+    pull_request:
+      branches: [ main ]
 
-env:
-  # your ECR repo name and a sensible tag
-  ECR_REPOSITORY: evolution-api-main
-  IMAGE_TAG:       ${{ github.sha }}
+  env:
+    # your ECR repo name and a sensible tag
+    ECR_REPOSITORY: evolution-api-main
+    IMAGE_TAG:       ${{ github.sha }}
 
-jobs:
-  terraform:
-    runs-on: ubuntu-latest
+  jobs:
+    terraform:
+      runs-on: ubuntu-latest
 
-    # AWS creds + other secrets
-    env:
-      AWS_REGION:               ${{ secrets.AWS_REGION }}
-      AWS_ACCESS_KEY_ID:        ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY:    ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      # (no ECR_REGISTRY here—comes from login step)
+      # AWS creds + other secrets
+      env:
+        AWS_REGION:               ${{ secrets.AWS_REGION }}
+        AWS_ACCESS_KEY_ID:        ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY:    ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        # (no ECR_REGISTRY here—comes from login step)
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.3
+        - name: Setup Terraform
+          uses: hashicorp/setup-terraform@v2
+          with:
+            terraform_version: 1.5.3
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id:     ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v2
+          with:
+            aws-access-key-id:     ${{ env.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+            aws-region:            ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        - name: Login to Amazon ECR
+          id: login-ecr
+          uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Write .env file from secret
-        working-directory: evolution-api-main
-        run: echo "${{ secrets.ENVFILE }}" > .env
+        - name: Write .env file from secret
+          working-directory: evolution-api-main
+          run: echo "${{ secrets.ENVFILE }}" > .env
 
-      - name: Build & Push Docker image (compose)
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        working-directory: evolution-api-main
-        run: |
-          docker system prune -f -a --volumes
-          docker compose -f docker-compose.yaml build --no-cache
+        - name: Build & Push Docker image (compose)
+          env:
+            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          working-directory: evolution-api-main
+          run: |
+            docker system prune -f -a --volumes
+            docker compose -f docker-compose.yaml build --no-cache
 
-      - name: Pull, Tag & Push Postgres to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          POSTGRES_TAG: 15
-        run: |
-          docker pull postgres:${POSTGRES_TAG}
-          docker tag postgres:${POSTGRES_TAG} $ECR_REGISTRY/postgres:${POSTGRES_TAG}
-          docker push $ECR_REGISTRY/postgres:${POSTGRES_TAG}
+        - name: Mirror Postgres to ECR
+          run: |
+            # choose whichever tag you like:
+            PG_TAG=15-alpine
 
-      - name: Pull, Tag & Push Postgres to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          POSTGRES_TAG: 15
-        run: |
-          docker pull postgres:${POSTGRES_TAG}
-          docker tag postgres:${POSTGRES_TAG} $ECR_REGISTRY/postgres:${POSTGRES_TAG}
-          docker push $ECR_REGISTRY/postgres:${POSTGRES_TAG}
+            # pull from Docker Hub
+            docker pull postgres:$PG_TAG
 
-      - name: Pull, Tag & Push Redis to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REDIS_TAG: latest
-        run: |
-          docker pull redis:${REDIS_TAG}
-          docker tag redis:${REDIS_TAG}     $ECR_REGISTRY/redis:${REDIS_TAG}
-          docker push $ECR_REGISTRY/redis:${REDIS_TAG}
+            # tag for ECR
+            docker tag \
+              postgres:$PG_TAG \
+              ${{ steps.login-ecr.outputs.registry }}/postgres:$PG_TAG
 
-      - name: Set Terraform env
-        run: |
-          echo "TF_INPUT=false"                                  >> $GITHUB_ENV
-          echo "AWS_REGION=${{ env.AWS_REGION }}"                >> $GITHUB_ENV
-          echo "AWS_DEFAULT_REGION=${{ env.AWS_REGION }}"        >> $GITHUB_ENV
-          echo "TF_VAR_aws_region=${{ env.AWS_REGION }}"         >> $GITHUB_ENV
-          echo "TF_VAR_evolutionapi_image=${{ steps.push-image.outputs.image_uri }}" \
-                                                                  >> $GITHUB_ENV
-          echo "TF_VAR_deployment_id=${{ github.run_id }}" >> $GITHUB_ENV
-                                                                    
-      - name: Terraform Format
-        run: terraform fmt -recursive
-        working-directory: terraform
+            # push into your ECR postgres repo
+            docker push ${{ steps.login-ecr.outputs.registry }}/postgres:$PG_TAG
 
-      - name: Terraform Init
-        run: terraform init
-        working-directory: terraform
 
-      - name: Terraform Validate
-        run: terraform validate
-        working-directory: terraform
+        - name: Set Terraform env
+          run: |
+            echo "TF_INPUT=false"                                  >> $GITHUB_ENV
+            echo "AWS_REGION=${{ env.AWS_REGION }}"                >> $GITHUB_ENV
+            echo "AWS_DEFAULT_REGION=${{ env.AWS_REGION }}"        >> $GITHUB_ENV
+            echo "TF_VAR_aws_region=${{ env.AWS_REGION }}"         >> $GITHUB_ENV
+            echo "TF_VAR_evolutionapi_image=${{ steps.push-image.outputs.image_uri }}" \
+                                                                    >> $GITHUB_ENV
+            echo "TF_VAR_deployment_id=${{ github.run_id }}" >> $GITHUB_ENV
+                                                                      
+        - name: Terraform Format
+          run: terraform fmt -recursive
+          working-directory: terraform
 
-      - name: Debug region env
-        run: |
-          echo "TF_VAR_aws_region: $TF_VAR_aws_region"
-          echo "AWS_REGION: $AWS_REGION"
-          echo "AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION"
+        - name: Terraform Init
+          run: terraform init
+          working-directory: terraform
 
-      - name: Terraform Plan
-        run: terraform plan -input=false -out=tfplan
-        working-directory: terraform
+        - name: Terraform Validate
+          run: terraform validate
+          working-directory: terraform
 
-      - name: Build Lambda zip for trigger_api
-        run: |
-          cd lambda/trigger-api
-          zip -r ../../terraform/trigger_api.zip .
-        shell: bash
+        - name: Debug region env
+          run: |
+            echo "TF_VAR_aws_region: $TF_VAR_aws_region"
+            echo "AWS_REGION: $AWS_REGION"
+            echo "AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION"
 
-      - name: Build Lambda zip for message_checker
-        run: |
-          cd lambda/message-checker
-          zip -r ../../terraform/message_checker.zip .
-        shell: bash
+        - name: Terraform Plan
+          run: terraform plan -input=false -out=tfplan
+          working-directory: terraform
 
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve tfplan
-        working-directory: terraform
+        - name: Build Lambda zip for trigger_api
+          run: |
+            cd lambda/trigger-api
+            zip -r ../../terraform/trigger_api.zip .
+          shell: bash
+
+        - name: Build Lambda zip for message_checker
+          run: |
+            cd lambda/message-checker
+            zip -r ../../terraform/message_checker.zip .
+          shell: bash
+
+        - name: Terraform Apply
+          if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+          run: terraform apply -auto-approve tfplan
+          working-directory: terraform
