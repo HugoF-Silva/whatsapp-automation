@@ -70,7 +70,25 @@ jobs:
 
           # export to Terraform
           echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-          
+      
+      - name: Pull, Tag & Push Redis to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REDIS_TAG: latest
+        run: |
+          docker pull redis:${REDIS_TAG}
+          docker tag redis:${REDIS_TAG} $ECR_REGISTRY/redis:${REDIS_TAG}
+          docker push $ECR_REGISTRY/redis:${REDIS_TAG}
+
+      - name: Pull, Tag & Push Postgres to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          POSTGRES_TAG: 15
+        run: |
+          docker pull postgres:${POSTGRES_TAG}
+          docker tag postgres:${POSTGRES_TAG} $ECR_REGISTRY/postgres:${POSTGRES_TAG}
+          docker push $ECR_REGISTRY/postgres:${POSTGRES_TAG}
+
       - name: Set Terraform env
         run: |
           echo "TF_INPUT=false"                                  >> $GITHUB_ENV
