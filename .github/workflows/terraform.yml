@@ -89,6 +89,18 @@ jobs:
         run: terraform plan -input=false -out=tfplan
         working-directory: terraform
 
+      - name: Build Lambda zip for trigger_api
+        run: |
+          cd lambda/trigger-api
+          zip -r ../../terraform/trigger_api.zip .
+        shell: bash
+
+      - name: Build Lambda zip for message_checker
+        run: |
+          cd lambda/message-checker
+          zip -r ../../terraform/message_checker.zip .
+        shell: bash
+
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve tfplan

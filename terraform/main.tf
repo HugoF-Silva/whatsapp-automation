@@ -16,7 +16,7 @@ data "aws_subnets" "default" {
 
 # Single Security Group for all components
 resource "aws_security_group" "all_in_one" {
-  name        = "all-in-one-sg"
+  name        = "all-in-one-sg-${var.deployment_id}"
   vpc_id      = data.aws_vpc.default.id
   description = "Allow all required traffic"
   ingress {
@@ -76,7 +76,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
 
 # ElastiCache Redis
 resource "aws_elasticache_subnet_group" "default" {
-  name       = "default-elasticache-subnet"
+  name       = "default-elasticache-subnet-${var.deployment_id}"
   subnet_ids = data.aws_subnets.default.ids
 }
 
