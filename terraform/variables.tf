@@ -14,13 +14,3 @@ variable "cache_cluster_id" {
   type        = string
   default     = "whatsapp-cache"
 }
-
-variable "lambda_message_checker_s3_key" {
-  description = "S3 key for message-checker Lambda zip"
-  type        = string
-}
-
-variable "lambda_trigger_api_s3_key" {
-  description = "S3 key for trigger-api Lambda zip"
-  type        = string
-}
