@@ -20,7 +20,6 @@ jobs:
       AWS_REGION:               ${{ secrets.AWS_REGION }}
       AWS_ACCESS_KEY_ID:        ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY:    ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      CACHE_CLUSTER_ID:         ${{ secrets.CACHE_CLUSTER_ID }}
       # (no ECR_REGISTRY here—comes from login step)
 
     steps:
@@ -66,7 +65,7 @@ jobs:
           echo "TF_VAR_aws_region=${{ env.AWS_REGION }}"         >> $GITHUB_ENV
           echo "TF_VAR_evolutionapi_image=${{ steps.build.outputs.image_uri }}" \
                                                                   >> $GITHUB_ENV
-          echo "TF_VAR_cache_cluster_id=${{ secrets.CACHE_CLUSTER_ID }}"        >> $GITHUB_ENV
+          echo "TF_VAR_deployment_id=${{ github.run_id }}" >> $GITHUB_ENV
                                                                     
       - name: Terraform Format
         run: terraform fmt -recursive

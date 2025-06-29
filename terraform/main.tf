@@ -56,7 +56,7 @@ resource "aws_ecs_task_definition" "evolutionapi" {
 }
 
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRole"
+  name = "ecsTaskExecutionRole-${var.deployment_id}"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -81,7 +81,7 @@ resource "aws_elasticache_subnet_group" "default" {
 }
 
 resource "aws_elasticache_cluster" "external" {
-  cluster_id           = var.cache_cluster_id
+  cluster_id           = "cache-${var.deployment_id}"
   engine               = "redis"
   node_type            = "cache.t3.micro"
   num_cache_nodes      = 1
@@ -101,7 +101,7 @@ resource "aws_lb" "app" {
 }
 
 resource "aws_lb_target_group" "evolutionapi" {
-  name        = "tg-evolutionapi"
+  name        = "tg-evolutionapi-${var.deployment_id}"
   port        = 80
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.default.id
@@ -167,7 +167,7 @@ resource "aws_appautoscaling_policy" "cpu_target" {
 
 # Lambda Role
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambdaExecutionRole"
+  name = "lambdaExecutionRole-${var.deployment_id}"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [

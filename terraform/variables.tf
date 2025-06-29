@@ -12,5 +12,10 @@ variable "evolutionapi_image" {
 variable "cache_cluster_id" {
   description = "ElastiCache cluster ID for external cache"
   type        = string
-  default     = "whatsapp-cache"
+  default     = "default-id"
+}
+
+variable "deployment_id" {
+  description = "Unique suffix for all resource names"
+  type        = string
 }
