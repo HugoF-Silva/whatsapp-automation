@@ -43,7 +43,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Write .env file from secret
-        run: echo "${{ secrets.ENVFILE }}" > .env
+        run: echo "${{ secrets.ENVFILE }}" > evolution-api-main/.env
 
       - name: Build & Push Docker image (compose)
         env:
