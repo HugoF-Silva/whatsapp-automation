@@ -215,7 +215,7 @@ resource "aws_lambda_function_url" "message_checker" {
 }
 
 resource "aws_lambda_function" "trigger_api" {
-  function_name = "trigger-api"
+  function_name = "trigger-api-${var.deployment_id}"
   filename      = "${path.module}/trigger_api.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.9"
