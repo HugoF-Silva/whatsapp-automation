@@ -71,6 +71,7 @@ jobs:
           # export to Terraform
           echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
       
+      
       - name: Pull, Tag & Push Redis to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
