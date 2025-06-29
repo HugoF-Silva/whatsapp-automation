@@ -53,39 +53,23 @@
           run: |
             docker system prune -f -a --volumes
             docker compose -f docker-compose.yaml build --no-cache
+            echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-        - name: Mirror Postgres to ECR
+        - name: Mirror Postgres & Redis to ECR
+          env:
+            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           run: |
-            # choose whichever tag you like:
+            # Postgres
             PG_TAG=15
-
-            # pull from Docker Hub
             docker pull postgres:$PG_TAG
+            docker tag postgres:$PG_TAG $ECR_REGISTRY/postgres:$PG_TAG
+            docker push $ECR_REGISTRY/postgres:$PG_TAG
 
-            # tag for ECR
-            docker tag \
-              postgres:$PG_TAG \
-              ${{ steps.login-ecr.outputs.registry }}/postgres:$PG_TAG
-
-            # push into your ECR postgres repo
-            docker push ${{ steps.login-ecr.outputs.registry }}/postgres:$PG_TAG
-
-        
-        - name: Mirror Redis to ECR
-          run: |
-            # choose the Redis tag you want to mirror:
+            # Redis
             REDIS_TAG=latest
-
-            # 1) pull from Docker Hub
             docker pull redis:$REDIS_TAG
-
-            # 2) tag for your ECR repo
-            docker tag \
-              redis:$REDIS_TAG \
-              ${{ steps.login-ecr.outputs.registry }}/redis:$REDIS_TAG
-
-            # 3) push into your ECR redis repo
-            docker push ${{ steps.login-ecr.outputs.registry }}/redis:$REDIS_TAG
+            docker tag redis:$REDIS_TAG $ECR_REGISTRY/redis:$REDIS_TAG
+            docker push $ECR_REGISTRY/redis:$REDIS_TAG
 
         - name: Set Terraform env
           run: |
