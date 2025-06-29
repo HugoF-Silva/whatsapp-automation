@@ -21,7 +21,7 @@ services:
       - 8080
 
   redis:
-    image: redis:latest
+    image: ${ECR_REGISTRY}/redis:${REDIS_TAG}
     networks:
       - evolution-net
     container_name: redis
@@ -34,7 +34,7 @@ services:
 
   postgres:
     container_name: postgres
-    image: postgres:15
+    image: ${ECR_REGISTRY}/postgres:${POSTGRES_TAG}
     networks:
       - evolution-net
     command: ["postgres", "-c", "max_connections=1000", "-c", "listen_addresses=*"]

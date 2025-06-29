@@ -54,32 +54,14 @@ jobs:
           docker system prune -f -a --volumes
           docker compose -f docker-compose.yaml build --no-cache
 
-      - name: Tag & Push to ECR
-        id: push-image
-        env:
-          ECR_REGISTRY:   ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
-          IMAGE_TAG:      ${{ env.IMAGE_TAG }}
-        run: |
-          # re-tag the image you just built under your ECR URI
-          docker tag evoapicloud/evolution-api:latest \
-            $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-          # push it
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-          # export to Terraform
-          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-      
-      
-      - name: Pull, Tag & Push Redis to ECR
+      - name: Pull, Tag & Push Postgres to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REDIS_TAG: latest
+          POSTGRES_TAG: 15
         run: |
-          docker pull redis:${REDIS_TAG}
-          docker tag redis:${REDIS_TAG} $ECR_REGISTRY/redis:${REDIS_TAG}
-          docker push $ECR_REGISTRY/redis:${REDIS_TAG}
+          docker pull postgres:${POSTGRES_TAG}
+          docker tag postgres:${POSTGRES_TAG} $ECR_REGISTRY/postgres:${POSTGRES_TAG}
+          docker push $ECR_REGISTRY/postgres:${POSTGRES_TAG}
 
       - name: Pull, Tag & Push Postgres to ECR
         env:
@@ -89,6 +71,15 @@ jobs:
           docker pull postgres:${POSTGRES_TAG}
           docker tag postgres:${POSTGRES_TAG} $ECR_REGISTRY/postgres:${POSTGRES_TAG}
           docker push $ECR_REGISTRY/postgres:${POSTGRES_TAG}
+
+      - name: Pull, Tag & Push Redis to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REDIS_TAG: latest
+        run: |
+          docker pull redis:${REDIS_TAG}
+          docker tag redis:${REDIS_TAG}     $ECR_REGISTRY/redis:${REDIS_TAG}
+          docker push $ECR_REGISTRY/redis:${REDIS_TAG}
 
       - name: Set Terraform env
         run: |
