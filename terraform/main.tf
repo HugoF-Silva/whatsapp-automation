@@ -125,6 +125,7 @@ resource "aws_ecs_service" "evolutionapi" {
   network_configuration {
     subnets         = var.public_subnet_ids
     security_groups = [aws_security_group.all_in_one.id]
+    assign_public_ip = true
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.evolutionapi.arn
