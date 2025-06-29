@@ -1,5 +1,8 @@
 services:
   api:
+    build:
+      context: ./
+      dockerfile: Dockerfile
     container_name: evolution_api
     image: evoapicloud/evolution-api:latest
     restart: always
