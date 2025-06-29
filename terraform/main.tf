@@ -93,7 +93,7 @@ resource "aws_elasticache_cluster" "external" {
 
 # ALB for ECS
 resource "aws_lb" "app" {
-  name               = "evolutionapi-lb"
+  name               = "evolutionapi-lb-${var.deployment_id}"
   internal           = false
   load_balancer_type = "application"
   subnets            = data.aws_subnets.default.ids
@@ -197,7 +197,7 @@ resource "aws_iam_role_policy_attachment" "lambda_elasticache" {
 
 # Lambdas (build .zip locally or in pipeline)
 resource "aws_lambda_function" "message_checker" {
-  function_name = "message-checker"
+  function_name = "message-checker-${var.deployment_id}"
   filename      = "${path.module}/message_checker.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.9"
