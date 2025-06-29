@@ -27,7 +27,7 @@ resource "aws_ecs_task_definition" "evolutionapi" {
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRolelat30"
+  name = "ecsTaskExecutionRolelat31"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution.json
 }
 
@@ -43,7 +43,7 @@ data "aws_iam_policy_document" "ecs_task_execution" {
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
   role       = aws_iam_role.ecs_task_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AdministratorAccess"
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
 data "aws_vpc" "main" {
@@ -62,14 +62,14 @@ data "aws_subnets" "private" {
 
 # ALB for ECS Service and Lambda targets
 resource "aws_lb" "app" {
-  name               = "chatbot-lblat30"
+  name               = "chatbot-lblat31"
   internal           = false
   load_balancer_type = "application"
   subnets            = data.aws_subnets.private.ids
 }
 
 resource "aws_lb_target_group" "evolutionapi" {
-  name     = "tg-evolutionapilat30"
+  name     = "tg-evolutionapilat31"
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.main.id
@@ -95,7 +95,7 @@ resource "aws_lb_listener" "http" {
 
 # ECS Service with Auto Scaling
 resource "aws_ecs_service" "evolutionapi" {
-  name            = "evolutionapi-servicelat30"
+  name            = "evolutionapi-servicelat31"
   cluster         = aws_ecs_cluster.evolutionapi.id
   task_definition = aws_ecs_task_definition.evolutionapi.arn
   desired_count   = 1
@@ -143,8 +143,8 @@ data "archive_file" "trigger_api" {
   output_path = "${path.module}/trigger_api.zip"
 }
 
-resource "aws_security_group" "redis_sglat30" {
-  name        = "redis_sglat30"
+resource "aws_security_group" "redis_sglat31" {
+  name        = "redis_sglat31"
   description = "Security group for Redis cluster"
   vpc_id      = data.aws_vpc.main.id
 
@@ -169,7 +169,7 @@ resource "aws_security_group" "redis_sglat30" {
 }
 
 resource "aws_security_group" "ecs_tasks" {
-  name        = "ecs-tasks-sglat30"
+  name        = "ecs-tasks-sglat31"
   vpc_id      = data.aws_vpc.main.id
   description = "Allow ECS tasks to communicate with VPC endpoints"
   egress {
@@ -181,7 +181,7 @@ resource "aws_security_group" "ecs_tasks" {
 }
 
 resource "aws_security_group" "vpce" {
-  name   = "vpce-sglat30"
+  name   = "vpce-sglat31"
   vpc_id = data.aws_vpc.main.id
 
   ingress {
@@ -238,11 +238,11 @@ resource "aws_elasticache_cluster" "external" {
   parameter_group_name = "default.redis7"
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.redis_subnets.name
-  security_group_ids   = [aws_security_group.redis_sglat30.id]
+  security_group_ids   = [aws_security_group.redis_sglat31.id]
 }
 
 resource "aws_elasticache_subnet_group" "redis_subnets" {
-  name       = "redis-subnet-grouplat30"
+  name       = "redis-subnet-grouplat31"
   subnet_ids = data.aws_subnets.private.ids
 }
 
@@ -271,9 +271,9 @@ resource "aws_lambda_function_url" "message_checker" {
   authorization_type = "NONE"
 }
 
-# Lambda: trigger-apilat30
+# Lambda: trigger-apilat31
 resource "aws_lambda_function" "trigger_api" {
-  function_name = "trigger-apilat30"
+  function_name = "trigger-apilat31"
   filename      = "${path.module}/trigger_api.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.9"
@@ -287,7 +287,7 @@ resource "aws_lambda_function" "trigger_api" {
 
 # IAM Role and Policy for Lambdas
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambdaExecutionRolelat30"
+  name = "lambdaExecutionRolelat31"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
