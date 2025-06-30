@@ -225,6 +225,11 @@ resource "aws_iam_role_policy_attachment" "lambda_elasticache" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonElastiCacheFullAccess"
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_vpc" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 # Lambdas (build .zip locally or in pipeline)
 resource "aws_lambda_function" "message_checker" {
   function_name = "message-checker-${var.deployment_id}"
@@ -236,6 +241,10 @@ resource "aws_lambda_function" "message_checker" {
     variables = {
       REDIS_ENDPOINT = aws_elasticache_cluster.external.cache_nodes[0].address
     }
+  }
+  vpc_config {
+    subnet_ids         = var.public_subnet_ids
+    security_group_ids = [aws_security_group.all_in_one.id]
   }
 }
 
