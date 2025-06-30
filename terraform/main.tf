@@ -220,7 +220,6 @@ resource "aws_lambda_function" "message_checker" {
 }
 
 
-
 resource "aws_lambda_function_url" "message_checker" {
   function_name      = aws_lambda_function.message_checker.function_name
   authorization_type = "NONE"

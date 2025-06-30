@@ -18,5 +18,5 @@ output "message_checker_function_url" {
 }
 
 output "postgres_endpoint" {
-  value = aws_db_instance.evolution_postgres.endpoint
+  value = "postgresql://postgres:postgres123@${data.aws_db_instance.postgres.endpoint}:5432/postgres"
 }
