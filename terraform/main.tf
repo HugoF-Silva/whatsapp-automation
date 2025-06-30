@@ -7,14 +7,12 @@ data "aws_vpc" "default" {
   default = true
 }
 
-terraform {
-  backend "s3" {
-    bucket         = "my-tf-state-bucket-iuasdhfuiweh"
-    key            = "evolution/production/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "my-tf-lock-table-iuasdhfuiweh"
-    encrypt        = true
-  }
+data "aws_db_instance" "postgres" {
+  db_instance_identifier = "evolution-postgres-15963097926"
+}
+
+data "aws_elasticache_cluster" "redis" {
+  cluster_id = "cache-15963097926"
 }
 
 # Single Security Group for all components
@@ -34,25 +32,6 @@ resource "aws_security_group" "all_in_one" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-}
-
-resource "aws_db_subnet_group" "default" {
-  name       = "default-db-subnet-${var.deployment_id}"
-  subnet_ids = var.public_subnet_ids
-}
-
-resource "aws_db_instance" "evolution_postgres" {
-  identifier              = "evolution-postgres-15963097926"
-  engine                  = "postgres"
-  instance_class          = "db.t3.micro"
-  allocated_storage       = 20
-  username                = "postgres"
-  password                = "postgres123"
-  db_subnet_group_name    = aws_db_subnet_group.default.name
-  vpc_security_group_ids  = [aws_security_group.all_in_one.id]
-  skip_final_snapshot     = true
-  publicly_accessible     = true
-  port                    = 5432
 }
 
 # ECS Cluster and Task Definition
@@ -93,7 +72,6 @@ resource "aws_ecs_task_definition" "evolutionapi" {
   ])
 }
 
-
 resource "aws_iam_role" "ecs_task_execution" {
   name = "ecsTaskExecutionRole-${var.deployment_id}"
   assume_role_policy = jsonencode({
@@ -111,23 +89,6 @@ resource "aws_iam_role" "ecs_task_execution" {
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
   role       = aws_iam_role.ecs_task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"   # Still simple
-}
-
-# ElastiCache Redis
-resource "aws_elasticache_subnet_group" "default" {
-  name       = "default-elasticache-subnet-${var.deployment_id}"
-  subnet_ids = var.public_subnet_ids
-}
-
-resource "aws_elasticache_cluster" "external" {
-  cluster_id           = "cache-15963097926"
-  engine               = "redis"
-  node_type            = "cache.t3.micro"
-  num_cache_nodes      = 1
-  parameter_group_name = "default.redis7"
-  port                 = 6379
-  subnet_group_name    = aws_elasticache_subnet_group.default.name
-  security_group_ids   = [aws_security_group.all_in_one.id]
 }
 
 # ALB for ECS
