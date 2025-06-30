@@ -20,7 +20,3 @@ output "message_checker_function_url" {
 output "postgres_endpoint" {
   value = aws_db_instance.evolution_postgres.endpoint
 }
-
-output "redis_endpoint" {
-  value = aws_elasticache_cluster.evolution_redis.cache_nodes[0].address
-}
