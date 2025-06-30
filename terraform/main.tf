@@ -26,48 +26,23 @@ resource "aws_security_group" "all_in_one" {
   }
 }
 
-# ——————————————————————————————————————
-# ElastiCache Redis
-# ——————————————————————————————————————
-
-resource "aws_elasticache_subnet_group" "default" {
-  name       = "default-elasticache-subnet-${var.deployment_id}"
-  subnet_ids = var.public_subnet_ids
-}
-
-resource "aws_elasticache_cluster" "external" {
-  cluster_id           = "cache-${var.deployment_id}"
-  engine               = "redis"
-  node_type            = "cache.t3.micro"
-  num_cache_nodes      = 1
-  parameter_group_name = "default.redis7"
-  port                 = 6379
-  subnet_group_name    = aws_elasticache_subnet_group.default.name
-  security_group_ids   = [aws_security_group.all_in_one.id]
-}
-
-# ——————————————————————————————————————
-# RDS Postgres
-# ——————————————————————————————————————
-
 resource "aws_db_subnet_group" "default" {
-  name       = "default-postgres-subnet-${var.deployment_id}"
+  name       = "default-db-subnet-${var.deployment_id}"
   subnet_ids = var.public_subnet_ids
 }
 
-resource "aws_db_instance" "postgres" {
-  identifier              = "postgres-${var.deployment_id}"
+resource "aws_db_instance" "evolution_postgres" {
+  identifier              = "evolution-postgres-${var.deployment_id}"
   engine                  = "postgres"
-  engine_version          = "15"
   instance_class          = "db.t3.micro"
   allocated_storage       = 20
-  name                    = "evolution"
-  username                = var.db_username
-  password                = var.db_password
-  skip_final_snapshot     = true
-  publicly_accessible     = false
-  vpc_security_group_ids  = [aws_security_group.all_in_one.id]
+  username                = "postgres"
+  password                = "postgres123"
   db_subnet_group_name    = aws_db_subnet_group.default.name
+  vpc_security_group_ids  = [aws_security_group.all_in_one.id]
+  skip_final_snapshot     = true
+  publicly_accessible     = true
+  port                    = 5432
 }
 
 # ECS Cluster and Task Definition
@@ -87,24 +62,16 @@ resource "aws_ecs_task_definition" "evolutionapi" {
   cpu                      = "512"
   memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  container_definitions = jsonencode([
+  container_definitions    = jsonencode([
     {
       name      = "evolutionapi"
       image     = var.evolutionapi_image
-      portMappings = [
-        { containerPort = 80, hostPort = 80, protocol = "tcp" }
-      ]
+      portMappings = [{ containerPort = 80, hostPort = 80 }]
       environment = [
-        {
-          name  = "REDIS_URL"
-          value = aws_elasticache_cluster.external.cache_nodes[0].address
-        },
-        {
-          name  = "DATABASE_URL"
-          value = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/evolution"
-        }
+        { name = "REDIS_URL", value = aws_elasticache_cluster.external.cache_nodes[0].address },
+        { name = "POSTGRES_URL", value = "postgresql://postgres:postgres123@${aws_db_instance.evolution_postgres.endpoint}:5432/postgres" }
       ]
-      configuration = {
+      logConfiguration = {
         logDriver = "awslogs"
         options = {
           awslogs-group         = "/ecs/evolutionapi"
@@ -115,6 +82,7 @@ resource "aws_ecs_task_definition" "evolutionapi" {
     }
   ])
 }
+
 
 resource "aws_iam_role" "ecs_task_execution" {
   name = "ecsTaskExecutionRole-${var.deployment_id}"
@@ -268,6 +236,10 @@ resource "aws_lambda_function" "message_checker" {
     variables = {
       REDIS_ENDPOINT = aws_elasticache_cluster.external.cache_nodes[0].address
     }
+  }
+  vpc_config {
+    subnet_ids         = var.public_subnet_ids
+    security_group_ids = [aws_security_group.all_in_one.id]
   }
 }
 

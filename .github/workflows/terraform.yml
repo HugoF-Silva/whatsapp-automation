@@ -1,27 +1,35 @@
 name: Terraform CI/CD
 
 on:
-  push:       { branches: [ main ] }
-  pull_request: { branches: [ main ] }
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 env:
+  # your ECR repo name and a sensible tag
   ECR_REPOSITORY: evolution-api-main
-  IMAGE_TAG:      ${{ github.sha }}
+  IMAGE_TAG:       ${{ github.sha }}
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
+
+    # AWS creds + other secrets
     env:
-      AWS_REGION:            ${{ secrets.AWS_REGION }}
-      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION:               ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID:        ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY:    ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      # (no ECR_REGISTRY here—comes from login step)
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-        with: { terraform_version: "1.5.3" }
+        with:
+          terraform_version: 1.5.3
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -34,44 +42,35 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Mirror Postgres & Redis to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          docker pull postgres:15
-          docker tag postgres:15 $ECR_REGISTRY/postgres:15
-          docker push $ECR_REGISTRY/postgres:15
-
-          docker pull redis:latest
-          docker tag redis:latest $ECR_REGISTRY/redis:latest
-          docker push $ECR_REGISTRY/redis:latest
+      - name: Write .env file from secret
+        working-directory: evolution-api-main
+        run: echo "${{ secrets.ENVFILE }}" > .env
 
       - name: Build & Push Docker image (compose)
-        id: push-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         working-directory: evolution-api-main
         run: |
           docker system prune -f -a --volumes
           docker compose -f docker-compose.yaml build --no-cache
-          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Mirror Postgres & Redis to ECR
+      - name: Tag & Push to ECR
+        id: push-image
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REGISTRY:   ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG:      ${{ env.IMAGE_TAG }}
         run: |
-          # Postgres
-          PG_TAG=15
-          docker pull postgres:$PG_TAG
-          docker tag postgres:$PG_TAG $ECR_REGISTRY/postgres:$PG_TAG
-          docker push $ECR_REGISTRY/postgres:$PG_TAG
+          # re-tag the image you just built under your ECR URI
+          docker tag evoapicloud/evolution-api:latest \
+            $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-          # Redis
-          REDIS_TAG=latest
-          docker pull redis:$REDIS_TAG
-          docker tag redis:$REDIS_TAG $ECR_REGISTRY/redis:$REDIS_TAG
-          docker push $ECR_REGISTRY/redis:$REDIS_TAG
+          # push it
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
+          # export to Terraform
+          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+      
       - name: Set Terraform env
         run: |
           echo "TF_INPUT=false"                                  >> $GITHUB_ENV

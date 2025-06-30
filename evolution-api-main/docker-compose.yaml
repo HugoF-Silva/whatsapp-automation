@@ -4,7 +4,7 @@ services:
       context: ./
       dockerfile: Dockerfile
     container_name: evolution_api
-    image: "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+    image: evoapicloud/evolution-api:latest
     restart: always
     depends_on:
       - redis
@@ -21,7 +21,7 @@ services:
       - 8080
 
   redis:
-    image: "${ECR_REGISTRY}/redis:latest"
+    image: redis:latest
     networks:
       - evolution-net
     container_name: redis
@@ -34,7 +34,7 @@ services:
 
   postgres:
     container_name: postgres
-    image: "${ECR_REGISTRY}/postgres:15"
+    image: postgres:15
     networks:
       - evolution-net
     command: ["postgres", "-c", "max_connections=1000", "-c", "listen_addresses=*"]
