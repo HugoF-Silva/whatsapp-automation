@@ -32,7 +32,7 @@ resource "aws_db_subnet_group" "default" {
 }
 
 resource "aws_db_instance" "evolution_postgres" {
-  identifier              = "evolution-postgres-${var.deployment_id}"
+  identifier              = "evolution-postgres-15963097926"
   engine                  = "postgres"
   instance_class          = "db.t3.micro"
   allocated_storage       = 20
@@ -110,7 +110,7 @@ resource "aws_elasticache_subnet_group" "default" {
 }
 
 resource "aws_elasticache_cluster" "external" {
-  cluster_id           = "cache-${var.deployment_id}"
+  cluster_id           = "cache-15963097926"
   engine               = "redis"
   node_type            = "cache.t3.micro"
   num_cache_nodes      = 1
