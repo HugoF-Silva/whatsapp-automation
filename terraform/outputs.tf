@@ -20,3 +20,7 @@ output "message_checker_function_url" {
 output "postgres_endpoint" {
   value = "postgresql://postgres:postgres123@${data.aws_db_instance.postgres.endpoint}:5432/postgres"
 }
+
+output "postgres_endpoint" {
+  value = "${data.aws_elasticache_cluster.redis.cache_nodes[0].address}:6379"
+}
