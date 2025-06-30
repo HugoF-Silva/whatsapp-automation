@@ -210,7 +210,7 @@ resource "aws_lambda_function" "message_checker" {
   role          = aws_iam_role.lambda_exec.arn
   environment {
     variables = {
-      REDIS_ENDPOINT = aws_elasticache_cluster.external.cache_nodes[0].address
+      REDIS_ENDPOINT = "${data.aws_elasticache_cluster.redis.cache_nodes[0].address}:6379"
     }
   }
   vpc_config {
@@ -218,6 +218,8 @@ resource "aws_lambda_function" "message_checker" {
     security_group_ids = [aws_security_group.all_in_one.id]
   }
 }
+
+
 
 resource "aws_lambda_function_url" "message_checker" {
   function_name      = aws_lambda_function.message_checker.function_name
