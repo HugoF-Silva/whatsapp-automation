@@ -9,10 +9,10 @@ data "aws_vpc" "default" {
 
 terraform {
   backend "s3" {
-    bucket         = "my-tf-state-bucket"
+    bucket         = "my-tf-state-bucket-iuasdhfuiweh"
     key            = "evolution/production/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "my-tf-lock-table"
+    dynamodb_table = "my-tf-lock-table-iuasdhfuiweh"
     encrypt        = true
   }
 }
