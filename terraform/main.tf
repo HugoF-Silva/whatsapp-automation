@@ -57,8 +57,8 @@ resource "aws_ecs_task_definition" "evolutionapi" {
       image     = var.evolutionapi_image
       portMappings = [{ containerPort = 80, hostPort = 80 }]
       environment = [
-        { name = "REDIS_URL", value = aws_elasticache_cluster.external.cache_nodes[0].address },
-        { name = "POSTGRES_URL", value = "postgresql://postgres:postgres123@${aws_db_instance.evolution_postgres.endpoint}:5432/postgres" }
+        { name = "REDIS_URL",     value = "${data.aws_elasticache_cluster.redis.cache_nodes[0].address}:6379" },
+        { name = "POSTGRES_URL",  value = "postgresql://postgres:postgres123@${data.aws_db_instance.postgres.endpoint}:5432/postgres" },
       ]
       logConfiguration = {
         logDriver = "awslogs"
