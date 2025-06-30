@@ -47,7 +47,7 @@ resource "aws_db_instance" "evolution_postgres" {
 
 # ECS Cluster and Task Definition
 resource "aws_cloudwatch_log_group" "evolutionapi" {
-  name              = "/ecs/evolutionapi"
+  name              = "/ecs/evolutionapi-${var.deployment_id}"
   retention_in_days = 1
 }
 
@@ -236,10 +236,6 @@ resource "aws_lambda_function" "message_checker" {
     variables = {
       REDIS_ENDPOINT = aws_elasticache_cluster.external.cache_nodes[0].address
     }
-  }
-  vpc_config {
-    subnet_ids         = var.public_subnet_ids
-    security_group_ids = [aws_security_group.all_in_one.id]
   }
 }
 
