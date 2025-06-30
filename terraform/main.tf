@@ -7,6 +7,16 @@ data "aws_vpc" "default" {
   default = true
 }
 
+terraform {
+  backend "s3" {
+    bucket         = "my-tf-state-bucket"
+    key            = "evolution/production/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "my-tf-lock-table"
+    encrypt        = true
+  }
+}
+
 # Single Security Group for all components
 resource "aws_security_group" "all_in_one" {
   name        = "all-in-one-sg-${var.deployment_id}"

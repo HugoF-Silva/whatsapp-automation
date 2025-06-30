@@ -86,7 +86,11 @@ jobs:
         working-directory: terraform
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init \
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+          -backend-config="key=evolution/production/terraform.tfstate" \
+          -backend-config="region=us-east-1" \
+          -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
         working-directory: terraform
 
       - name: Terraform Validate
