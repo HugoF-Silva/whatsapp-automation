@@ -1,0 +1,37 @@
+{
+    "event": "messages.upsert",
+    "instance": "my-instance",
+    "data": {
+        "key": {
+            "remoteJid": "556296504306@s.whatsapp.net",
+            "fromMe": false,
+            "id": "3EB019035C0D13DDBCB527"
+        },
+        "pushName": "Hugo",
+        "status": "DELIVERY_ACK",
+        "message": {
+            "conversation": "g",
+            "messageContextInfo": {
+                "deviceListMetadata": {
+                    "senderKeyHash": "MygJdCH3x2cBYA==",
+                    "senderTimestamp": "1750795304",
+                    "senderAccountType": "E2EE",
+                    "receiverAccountType": "E2EE",
+                    "recipientKeyHash": "m/Kd7gaV0FfA+g==",
+                    "recipientTimestamp": "1751356610"
+                },
+                "deviceListMetadataVersion": 2,
+                "messageSecret": "5Lf9LNWNogSPP5v7r3MQy6ig8D5TXSc1Iibz5+p9y00="
+            }
+        },
+        "messageType": "conversation",
+        "messageTimestamp": 1751400310,
+        "instanceId": "89c8b962-ccd9-4f0e-bc2e-94580f4dffb9",
+        "source": "web"
+    },
+    "destination": "https://sew7zifklmeu4kzujzbuyfnrra0yscjg.lambda-url.us-east-1.on.aws/",
+    "date_time": "2025-07-01T17:05:10.891Z",
+    "sender": "556284720643@s.whatsapp.net",
+    "server_url": "https://evolutionapi.vpsmtt.shop",
+    "apikey": "9D46768C81C2-4524-A4DA-A73E42EF3639"
+}

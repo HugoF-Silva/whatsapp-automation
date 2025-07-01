@@ -50,7 +50,10 @@ def lambda_handler(event, context):
     logger.info("Lambda started processing event: %s", event)
     logger.info("Lambda context: %s", context)
 
-    date_time_string = event[0]['json']['body']['date_time']
+    event_body = json.loads(event['body'], ascii=False)
+    
+    date_time_string = event_body['date_time']
+
     # Parse the date and extract just the hour (as an integer)
     date_obj = datetime.fromisoformat(date_time_string)
     hour_int = date_obj.hour
@@ -64,7 +67,7 @@ def lambda_handler(event, context):
 
     if (type == "conversation"):
         try:
-            message = event['item']['json']['body']['data']['message']['conversation']
+            message = event_body['data']['message']['conversation']
             
             # Check message length
             if len(message) > 160000:
@@ -110,11 +113,9 @@ def lambda_handler(event, context):
                     route_times_obj = resp.data
 
                     time.sleep(1)
-                    # Replace this with your actual input extraction
-                    date_str = event['item']['json']['body']['date_time']
 
                     # Parse the date string (assume it's in ISO format)
-                    date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))  # Handles UTC "Z" format
+                    date = datetime.fromisoformat(date_time_string.replace('Z', '+00:00'))  # Handles UTC "Z" format
 
                     # Add 3 hours
                     date_plus_3 = date + timedelta(hours=3)
@@ -139,8 +140,8 @@ def lambda_handler(event, context):
                 classificacao = intent_json['classificacao']
 
     elif (type == "locationMessage"):
-        latitude = event['item']['json']['body']['data']['message']['locationMessage']['degreesLatitude']
-        longitude = event['item']['json']['body']['data']['message']['logationMessage']['degreesLongitude']
+        latitude = event_body['data']['message']['locationMessage']['degreesLatitude']
+        longitude = event_body['data']['message']['logationMessage']['degreesLongitude']
         body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
         resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30)
 

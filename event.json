@@ -1,0 +1,39 @@
+{
+    "version": "2.0",
+    "routeKey": "$default",
+    "rawPath": "/",
+    "rawQueryString": "",
+    "headers": {
+        "x-amzn-tls-cipher-suite": "TLS_AES_128_GCM_SHA256",
+        "content-length": "947",
+        "x-amzn-tls-version": "TLSv1.3",
+        "x-amzn-trace-id": "Self=1-68643f77-0663594803c93ebc21c14a20;Root=1-68643f77-14d2e343597976fa37bd4064",
+        "x-forwarded-proto": "https",
+        "host": "sew7zifklmeu4kzujzbuyfnrra0yscjg.lambda-url.us-east-1.on.aws",
+        "x-forwarded-port": "443",
+        "content-type": "application/json",
+        "x-forwarded-for": "31.97.243.153",
+        "accept-encoding": "gzip, compress, deflate, br",
+        "user-agent": "axios/1.7.9"
+    },
+    "requestContext": {
+        "accountId": "anonymous",
+        "apiId": "sew7zifklmeu4kzujzbuyfnrra0yscjg",
+        "domainName": "sew7zifklmeu4kzujzbuyfnrra0yscjg.lambda-url.us-east-1.on.aws",
+        "domainPrefix": "sew7zifklmeu4kzujzbuyfnrra0yscjg",
+        "http": {
+            "method": "POST",
+            "path": "/",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "31.97.243.153",
+            "userAgent": "axios/1.7.9"
+        },
+        "requestId": "323eaacd-7c52-4ae9-a1a3-0b2e156f0231",
+        "routeKey": "$default",
+        "stage": "$default",
+        "time": "01/Jul/2025:20:05:11 +0000",
+        "timeEpoch": 1751400311244
+    },
+    "body": "{\"event\":\"messages.upsert\",\"instance\":\"my-instance\",\"data\":{\"key\":{\"remoteJid\":\"556296504306@s.whatsapp.net\",\"fromMe\":false,\"id\":\"3EB019035C0D13DDBCB527\"},\"pushName\":\"Hugo\",\"status\":\"DELIVERY_ACK\",\"message\":{\"conversation\":\"g\",\"messageContextInfo\":{\"deviceListMetadata\":{\"senderKeyHash\":\"MygJdCH3x2cBYA==\",\"senderTimestamp\":\"1750795304\",\"senderAccountType\":\"E2EE\",\"receiverAccountType\":\"E2EE\",\"recipientKeyHash\":\"m/Kd7gaV0FfA+g==\",\"recipientTimestamp\":\"1751356610\"},\"deviceListMetadataVersion\":2,\"messageSecret\":\"5Lf9LNWNogSPP5v7r3MQy6ig8D5TXSc1Iibz5+p9y00=\"}},\"messageType\":\"conversation\",\"messageTimestamp\":1751400310,\"instanceId\":\"89c8b962-ccd9-4f0e-bc2e-94580f4dffb9\",\"source\":\"web\"},\"destination\":\"https://sew7zifklmeu4kzujzbuyfnrra0yscjg.lambda-url.us-east-1.on.aws/\",\"date_time\":\"2025-07-01T17:05:10.891Z\",\"sender\":\"556284720643@s.whatsapp.net\",\"server_url\":\"https://evolutionapi.vpsmtt.shop\",\"apikey\":\"9D46768C81C2-4524-A4DA-A73E42EF3639\"}",
+    "isBase64Encoded": false
+}
