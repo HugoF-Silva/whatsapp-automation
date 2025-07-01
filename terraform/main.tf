@@ -11,6 +11,20 @@ provider "aws" {
   region = var.aws_region
 }
 
+resource "aws_s3_bucket" "lambda_code" {
+  bucket = var.lambda_code_bucket
+
+  # optional hardening:
+  acl    = "private"
+  versioning {
+    enabled = true
+  }
+  tags = {
+    Name        = "lambda-code-bucket-${var.deployment_id}"
+    Environment = "prod"
+  }
+}
+
 ### IAM role for both Lambdas ###
 resource "aws_iam_role" "lambda_exec" {
   name = "whatsapp-lambda-exec-${var.deployment_id}"
@@ -43,6 +57,8 @@ resource "aws_lambda_function" "message_checker" {
   handler       = "handler.lambda_handler"
   runtime       = "python3.10"
   role          = aws_iam_role.lambda_exec.arn
+  s3_bucket     = var.lambda_code_bucket
+  s3_key        = "lambda/message-checker.zip"
 
   environment {
     variables = {
