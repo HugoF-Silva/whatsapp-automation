@@ -30,10 +30,9 @@ jobs:
 
       - name: Terraform Init & Create Bucket
         working-directory: terraform
-        run: terraform init && \
-             terraform apply -target=terraform -auto-approve && \
-             terraform apply -target=provider.aws -auto-approve && \
-             terraform apply -target=aws_s3_bucket.lambda_code -auto-approve
+        run: |
+          terraform init && \
+          terraform apply -target=aws_s3_bucket.lambda_code -auto-approve
 
       - name: Install zip & upgrade pip
         run: |
