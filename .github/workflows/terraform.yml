@@ -28,10 +28,6 @@ jobs:
         with:
           terraform_version: "1.5.0"
       
-      - name: Terraform init
-        working-directory: terraform
-        run: terraform init
-
       - name: Bootstrap Lambda S3 bucket if missing
         run: |
           set -e
@@ -83,6 +79,10 @@ jobs:
       - name: Upload message-checker Lambda zip to S3
         run: |
           aws s3 cp terraform/build/message-checker-api.zip s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/message-checker.zip
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init
 
       - name: Terraform Plan
         working-directory: terraform
