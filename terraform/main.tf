@@ -53,7 +53,6 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamo_redis" {
 
 resource "aws_lambda_function" "message_checker" {
   function_name = "message-checker-${var.deployment_id}"
-  filename      = "${path.module}/build/message-checker.zip"
   handler       = "handler.lambda_handler"
   runtime       = "python3.10"
   role          = aws_iam_role.lambda_exec.arn
