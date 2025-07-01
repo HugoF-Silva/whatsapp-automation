@@ -53,9 +53,11 @@ jobs:
         run: |
           cd lambda/message-checker
           docker run --rm -v "$PWD":/var/task --entrypoint bash public.ecr.aws/lambda/python:3.10 -c "
+            yum install -y zip &&
             pip install --upgrade pip &&
+            rm -rf package/ &&
             pip install -r requirements.txt -t package/ &&
-            cp handler.py gemini.py package/ &&
+            cp handler.py gemini.py config.py package/ &&
             cd package && zip -r ../message-checker.zip .
           "
           mkdir -p ../../terraform/build
@@ -64,7 +66,9 @@ jobs:
         run: |
           cd lambda/trigger-api
           docker run --rm -v "$PWD":/var/task --entrypoint bash public.ecr.aws/lambda/python:3.10 -c "
+            yum install -y zip &&
             pip install --upgrade pip &&
+            rm -rf package/ &&
             pip install -r requirements.txt -t package/ &&
             cp handler.py data_store.py config.py models.py schema.py utils.py package/ &&
             cd package && zip -r ../trigger-api.zip .
