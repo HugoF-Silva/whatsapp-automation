@@ -1,5 +1,4 @@
 langchain-google-genai
 langchain-core
-pydantic-settings
 langchain-redis
 upstash-redis
