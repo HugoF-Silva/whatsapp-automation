@@ -9,8 +9,8 @@ variable "auth_api_key" {
   type        = string
 }
 
-variable "whatsapp_version" {
-  description = "Baileys session version"
+variable "evo_api_url" {
+  description = "Your EvolutionAPI url"
   type        = string
 }
 
@@ -26,5 +26,10 @@ variable "redis_password" {
 
 variable "dynamo_table_name" {
   description = "Name of your existing DynamoDB table"
+  type        = string
+}
+
+variable "deployment_id" {
+  description = "Workflow trigger identifier"
   type        = string
 }
