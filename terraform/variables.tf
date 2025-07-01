@@ -4,31 +4,27 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "evolutionapi_image" {
-  description = "Docker image URI for EvolutionAPI"
+variable "auth_api_key" {
+  description = "Your EvolutionAPI key"
   type        = string
 }
 
-variable "cache_cluster_id" {
-  description = "ElastiCache cluster ID for external cache"
-  type        = string
-  default     = "default-id"
-}
-
-variable "deployment_id" {
-  description = "Unique suffix for all resource names"
+variable "whatsapp_version" {
+  description = "Baileys session version"
   type        = string
 }
 
-variable "public_subnet_ids" {
-  description = "List of public subnet IDs"
-  type        = list(string)
-  default     = [
-  "subnet-0e524ba4d7497f3ed",
-  "subnet-02632a74d28164c3d",
-  "subnet-00b1273c72f65d3ee",
-  "subnet-0c05c7ec4456a1634",
-  "subnet-0f560fea3c6c8523b",
-  "subnet-07431bb62840ab0de"
-]
+variable "redis_url" {
+  description = "Upstash Redis URL"
+  type        = string
+}
+
+variable "redis_password" {
+  description = "Upstash Redis password"
+  type        = string
+}
+
+variable "dynamo_table_name" {
+  description = "Name of your existing DynamoDB table"
+  type        = string
 }

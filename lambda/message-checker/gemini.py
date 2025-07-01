@@ -4,7 +4,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_redis import RedisChatMessageHistory
-
+import re
 import json
 
 system_prompt = """
@@ -106,10 +106,176 @@ class IntentionClassifier:
     def execute(self, question):
         print(f"assistant_scope input: {question}")
         output_scope = self.chain_with_history.invoke({"input": question}, config={"configurable": {"session_id": f"{cripto_number}"}})
+        output_scope = re.sub(r'```json|```', '', output_scope).strip()
         try: 
             json.loads(output_scope)
         except json.decoder.JSONDecodeError:
             output_scope = self._regenerate_json(output_scope)
-        if not isinstance(output_scope, str):
-            output_scope = json.dumps(output_scope, ensure_ascii=False)
+            output_scope = re.sub(r'```json|```', '', output_scope).strip()
+        if isinstance(output_scope, str):
+            output_scope = json.loads(output_scope, ensure_ascii=False)
+        return output_scope
+    
+system_prompt2 = """
+# CONTEXTO
+## Quem é a Menos Tempo
+Uma instituição de tecnologia social formada por Renzo, Hugo, e Renan https://www.instagram.com/menostempotecnologia/
+
+Os três acreditam que se eles que querem contribuir com trasparência do SUS para a população, há pessoas que se juntariam para ajudar a fazer o mesmo.
+
+## O que a Menos Tempo faz
+Fornece tempo estimado que a pessoa irá gastar com hospitais públicos nas proximidades com base no "tempo estimado de carro até chegar na unidade" + "tempo estimado para ser atendido por um médico".
+
+## Por que a Menos Tempo faz o que faz?
+1. Economizar tempo do paciente (sabendo +/- o tempo que irá gastar, ele sabe qual vai atendê-lo em menos tempo se sair de casa agora).
+
+2. Diminuir ociosidade de unidades de saúde (se o paciente vai pra unidade que atende ele em menos tempo, ele evita aumentar tempo de espera de unidades já lotadas).
+
+3. Processa dados para fornecer um bom serviço para o paciente.
+
+## Limitações da Menos Tempo
+Na versão atual:
+* não é possível saber apenas o tempo de espera.
+* Tempo gasto pelo paciente = "tempo de deslocamento de carro" + "tempo de espera até ver o médico"
+* Não consegue enviar a localização da unidade de saúde.
+* Não consegue estimar tempo entre as 21:00 e as 05:00 (baixa movimentação). Data-hora atual: {{ $('Webhook').item.json.body.date_time }}
+* Só sabe tempo de espera estimado  para pacientes com classificação de risco verde 🟢 (80% dos pacientes) das unidades "CAIS Campinas" e "Ciams Urias Magalhães" de Goiânia.
+
+## Precauções da Menos Tempo:
+- Ao conversar com você (Sr. Menostempo), o usuário permite o processamento de dados.
+- Os dados (armazenados apenas durante 48 horas e excluídos após o tempo estourar) são criptografados.
+- Enviar outra localização ou outro CEP substitui o anterior.
+- Sem a localização não é possível calcular o tempo que o paciente irá gastar. Portanto, é obrigatória a localização para calculá-lo.
+
+## Contexto sobre a situação que se encontra
+### Classificações possíveis
+- outro
+- tempo
+- ajudar
+- erro
+
+### Por trás das cortinas no momento:
+{behind_the_courtains}
+
+### Classificação atual da situação/mensagem do usuário:
+"{classificacao}"
+
+### Somente caso classificação = "ajudar"
+A Menos Tempo ainda não é um serviço oficial, mas se o usuário disser que QUER OFICIALMENTE ATRAVÉS do form:
+https://docs.google.com/forms/d/e/1FAIpQLSdtI1HZ0iyxYQWLAbI-TH4K5nUcyI8qiXTGcFr1ze-D0jZqvA/viewform?usp=dialog
+conseguiremos investimento para trazer melhores previsões e melhorar o serviço para ele.
+
+O usuário pode saber que consegue (apenas através do forms) informar o tempo de espera.
+https://docs.google.com/forms/d/e/1FAIpQLSfKsi_p7Dv37tZaY_CUCGDXcvJWwsCSUdmboIa-sGWA8T4uPw/viewform?usp=header
+
+# Seu papel
+- Ter senso comum (obrigatório).
+- Responder o usuário de forma breve.
+- Contextualizar sua resposta com apenas uma informação do contexto.
+
+# Importante
+- Nem sempre o contexto possui informação sobre algo associável a mensagem do usuário, não invente informação, mas nesses casos, também não precisa se apoiar no contexto. 
+- O usuário é uma pessoa simples, e portanto o jeito de se comunicar com ele é o mais simples possível (sem "palavras difíceis").
+"""
+
+class AnswerMan:
+    def __init__(self, behind_the_courtains, classificacao):
+        # Instanciando a classe ChatOpenAI
+        self.llm = self._set_llm()
+
+        self.qa_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt2),
+                ("human", "{question}"),
+            ]
+        ).partial(behind_the_courtains=behind_the_courtains, classificacao=classificacao)
+
+        # Criando a cadeia de execução da llm
+        self.scope_chain = (
+                self.qa_prompt
+                | self.llm
+                | StrOutputParser()
+        )
+
+        self.chain_with_history = RunnableWithMessageHistory(self.scope_chain, self._get_redis_history, input_messages_key="input", history_messages_key="history")
+
+
+    def _set_llm(self):
+        try:
+            self.llm = ChatGoogleGenerativeAI(
+                model="gemini-2.0-flash",
+                temperature=0,
+                max_tokens=None,
+                timeout=None,
+                max_retries=2,
+            )
+
+        except Exception as e:
+            raise RuntimeError(f"LLM was not defined. Error: {e}")
+
+    def _get_redis_history(self, session_id: str) -> BaseChatMessageHistory:
+        return RedisChatMessageHistory(session_id, redis_url=REDIS_URL)
+    
+    def execute(self, question):
+        print(f"assistant_scope input: {question}")
+        output_scope = self.chain_with_history.invoke({"input": question}, config={"configurable": {"session_id": f"1_{cripto_number}"}})
+        return output_scope
+    
+
+system_prompt3 = """
+## Contexto
+Considerando as únicas unidades de saúde as quais o tempo de espera é medido, e considerando a localização do usuário: 
+- Foi somado o tempo de deslocamento de carro 🚗 + o tempo de espera no hospital 🏥 até ver um médico 🧑‍⚕️.
+
+Cá está o objeto com tempo das unidades de saúde que podem atender o usuário, do menor ao maior tempo (em minutos):
+{merged}
+
+VOCÊ É INFORMATIVO E APENAS USA OS NÚMEROS DESSE CONTEXTO, NUNCA OUTROS.
+
+O usuário precisa que a informação seja mais palatável (simples de ser entendida).
+
+## Importante:
+- 80% dos pacientes são classificação de risco verde 🟢 (mas você não sabe qual classificação de risco do usuário, nem ele).
+- O que importa para o usuário é o tempo.
+- Se o usuário estiver correndo risco de vida, ele deve ligar para o SAMU 192.
+- Seja o mais breve possível.
+- Essas são apenas estimativas de tempo para ajudar o usuário a ter noção, não uma certeza.
+"""
+
+class UnderstandableWaitTime:
+    def __init__(self, merged):
+        # Instanciando a classe ChatOpenAI
+        self.llm = self._set_llm()
+
+        self.qa_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt3),
+                ("human", "{question}"),
+            ]
+        ).partial(merged=merged)
+
+        # Criando a cadeia de execução da llm
+        self.scope_chain = (
+                self.qa_prompt
+                | self.llm
+                | StrOutputParser()
+        )
+
+    def _set_llm(self):
+        try:
+            self.llm = ChatGoogleGenerativeAI(
+                model="gemini-2.0-flash",
+                temperature=0,
+                max_tokens=None,
+                timeout=None,
+                max_retries=2,
+            )
+
+        except Exception as e:
+            raise RuntimeError(f"LLM was not defined. Error: {e}")
+
+    
+    def execute(self, question):
+        print(f"assistant_scope input: {question}")
+        output_scope = self.scope_chain.invoke({"input": question})
         return output_scope
