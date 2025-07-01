@@ -49,35 +49,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y zip
           python3 -m pip install --upgrade pip
-
       - name: Build message-checker Lambda zip (Amazon Linux)
         run: |
           cd lambda/message-checker
           docker run --rm -v "$PWD":/var/task --entrypoint bash public.ecr.aws/lambda/python:3.10 -c "
             pip install --upgrade pip &&
-            pip install -r requirements.txt -t package/
-          "
-          cp handler.py gemini.py package/
-          cd package
-          zip -r ../message-checker.zip .
-          cd ..
-          mkdir -p ../../terraform/build
-          cp message-checker.zip ../../terraform/build/
+            pip install -r requirements.txt -t package/ &&
+            cp handler.py gemini.py config.py package/ &&
+            cd package && zip -r ../message-checker.zip .
 
       - name: Build trigger-api Lambda zip (Amazon Linux)
         run: |
           cd lambda/trigger-api
           docker run --rm -v "$PWD":/var/task --entrypoint bash public.ecr.aws/lambda/python:3.10 -c "
             pip install --upgrade pip &&
-            pip install -r requirements.txt -t package/
+            pip install -r requirements.txt -t package/ &&
+            cp handler.py data_store.py config.py models.py schema.py utils.py package/ &&
+            cd package && zip -r ../trigger-api.zip .
           "
-          cp handler.py data_store.py config.py models.py schema.py utils.py package/
-          cd package
-          zip -r ../trigger-api.zip .
-          cd ..
           mkdir -p ../../terraform/build
           cp trigger-api.zip ../../terraform/build/
-
       - name: Upload trigger-api Lambda zip to S3
         run: |
           aws s3 cp terraform/build/trigger-api.zip s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/trigger-api.zip
