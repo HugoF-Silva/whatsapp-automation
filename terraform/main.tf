@@ -47,7 +47,7 @@ resource "aws_lambda_function" "message_checker" {
   runtime       = "python3.10"
   role          = aws_iam_role.lambda_exec.arn
   s3_bucket     = data.aws_s3_bucket.lambda_code.bucket
-  s3_key        = data.aws_s3_bucket.message_checker_zip.key
+  s3_key        = "lambda/message-checker.zip"
 
   environment {
     variables = {
@@ -72,7 +72,7 @@ resource "aws_lambda_function" "trigger_api" {
   runtime       = "python3.10"
   role          = aws_iam_role.lambda_exec.arn
   s3_bucket     = data.aws_s3_bucket.lambda_code.bucket
-  s3_key        = data.aws_s3_bucket.message_checker_zip.key
+  s3_key        = "lambda/trigger-api.zip"
 
   environment {
     variables = {
