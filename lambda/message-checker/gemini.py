@@ -75,7 +75,7 @@ class IntentionClassifier:
         self.scope_chain = (
                 self.qa_prompt
                 | self.llm
-                | StrOutputParser()
+                | StrOutputParser() 
         )
 
         self.chain_with_history = RunnableWithMessageHistory(self.scope_chain, self._get_redis_history, input_messages_key="input", history_messages_key="history")
@@ -90,7 +90,7 @@ class IntentionClassifier:
                 timeout=None,
                 max_retries=2,
             )
-
+            return self.llm
         except Exception as e:
             raise RuntimeError(f"LLM was not defined. Error: {e}")
 
