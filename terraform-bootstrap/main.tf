@@ -13,6 +13,14 @@ provider "aws" {
 
 resource "aws_s3_bucket" "lambda_code" {
   bucket = var.lambda_code_bucket
+
+  # optional hardening:
   acl    = "private"
-  versioning { enabled = true }
+  versioning {
+    enabled = true
+  }
+  tags = {
+    Name        = "lambda-code-bucket"
+    Environment = "prod"
+  }
 }
