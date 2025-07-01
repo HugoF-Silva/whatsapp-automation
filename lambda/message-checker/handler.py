@@ -17,7 +17,6 @@ EVO_API_URL = os.environ["EVO_API_URL"]
 TRIGGER_API_URL  = os.environ['TRIGGER_API_URL']
 
 classifier = IntentionClassifier()
-answerman = AnswerMan()
 
 def merge_estimates_and_routes(all_estimates_obj, route_times_obj):
     # Map travel times by unit

@@ -213,7 +213,7 @@ class AnswerMan:
                 timeout=None,
                 max_retries=2,
             )
-
+            return self.llm
         except Exception as e:
             raise RuntimeError(f"LLM was not defined. Error: {e}")
 
@@ -274,7 +274,7 @@ class UnderstandableWaitTime:
                 timeout=None,
                 max_retries=2,
             )
-
+            return self.llm
         except Exception as e:
             raise RuntimeError(f"LLM was not defined. Error: {e}")
 
