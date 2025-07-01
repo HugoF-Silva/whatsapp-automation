@@ -16,16 +16,17 @@ jobs:
       TF_VAR_redis_url: ${{ secrets.UPSTASH_REDIS_REST_URL }}
       TF_VAR_redis_password: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
       TF_VAR_dynamo_table_name: "YourExistingTable"
-    steps:
-      - uses: actions/checkout@v3
 
-      - name: Set up Python & zip tool
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install zip
         run: |
           sudo apt-get update && sudo apt-get install -y zip
           python3 -m pip install --upgrade pip
 
-      - name: Prepare Terraform working directory
-        working-directory: terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: "1.5.0"

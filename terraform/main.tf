@@ -48,6 +48,7 @@ resource "aws_lambda_function" "message_checker" {
       CONFIG_SESSION_PHONE_VERSION = var.whatsapp_version
       REDIS_URL                    = var.redis_url
       REDIS_PASSWORD               = var.redis_password
+      TRIGGER_API_URL              = aws_lambda_function_url.trigger_api_url.function_url
     }
   }
 }
