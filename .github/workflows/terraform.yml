@@ -32,17 +32,19 @@ jobs:
         working-directory: terraform
         run: terraform init
 
-      - name: Create Lambda S3 bucket if missing
+      - name: Bootstrap Lambda S3 bucket if missing
         run: |
           set -e
-          BUCKET="lambda-code-bucket-${{ secrets.LAMBDA_CODE_BUCKET }}"
-          # If the bucket exists, this will return 0; if not, 254
+          BUCKET="${{ secrets.LAMBDA_CODE_BUCKET }}"
           if aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
-            echo "Bucket $BUCKET already exists, skipping Terraform bucket creation."
+            echo "Bucket $BUCKET already exists, skipping creation."
           else
-            echo "Bucket $BUCKET does not exist, running terraform apply -target=aws_s3_bucket.lambda_code"
-            cd terraform
-            terraform apply -target=aws_s3_bucket.lambda_code -auto-approve
+            echo "Bucket $BUCKET does not exist. Bootstrapping with Terraform."
+            cd terraform-bootstrap
+            terraform init
+            terraform apply -auto-approve \
+              -var="aws_region=${{ secrets.AWS_REGION }}" \
+              -var="lambda_code_bucket=${{ secrets.LAMBDA_CODE_BUCKET }}"
             cd ..
           fi
 

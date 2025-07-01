@@ -11,20 +11,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-resource "aws_s3_bucket" "lambda_code" {
-  bucket = "lambda-code-bucket-${var.lambda_code_bucket}"
-
-  # optional hardening:
-  acl    = "private"
-  versioning {
-    enabled = true
-  }
-  tags = {
-    Name        = "lambda-code-bucket"
-    Environment = "prod"
-  }
-}
-
 ### IAM role for both Lambdas ###
 resource "aws_iam_role" "lambda_exec" {
   name = "whatsapp-lambda-exec-${var.deployment_id}"
