@@ -80,9 +80,9 @@ jobs:
         run: |
           aws s3 cp terraform/build/trigger-api.zip s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/trigger-api.zip
 
-      - name: Upload trigger-api Lambda zip to S3
+      - name: Upload message-checker Lambda zip to S3
         run: |
-          aws s3 cp terraform/build/trigger-api.zip s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/trigger-api.zip
+          aws s3 cp terraform/build/message-checker-api.zip s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/message-checker.zip
 
       - name: Terraform Plan
         working-directory: terraform
