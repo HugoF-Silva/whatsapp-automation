@@ -36,7 +36,7 @@ data "archive_file" "message_checker_zip" {
 }
 
 resource "aws_lambda_function" "message_checker" {
-  function_name = "message-checker"
+  function_name = "message-checker-${var.deployment_id}"
   filename      = data.archive_file.message_checker_zip.output_path
   handler       = "handler.lambda_handler"
   runtime       = "python3.10"
@@ -45,7 +45,7 @@ resource "aws_lambda_function" "message_checker" {
   environment {
     variables = {
       AUTHENTICATION_API_KEY       = var.auth_api_key
-      CONFIG_SESSION_PHONE_VERSION = var.whatsapp_version
+      EVO_API_URL                  = var.evo_api_url
       REDIS_URL                    = var.redis_url
       REDIS_PASSWORD               = var.redis_password
       TRIGGER_API_URL              = aws_lambda_function_url.trigger_api_url.function_url
@@ -67,7 +67,7 @@ data "archive_file" "trigger_api_zip" {
 }
 
 resource "aws_lambda_function" "trigger_api" {
-  function_name = "trigger-api"
+  function_name = "trigger-api-${var.deployment_id}"
   filename      = data.archive_file.trigger_api_zip.output_path
   handler       = "handler.lambda_handler"
   runtime       = "python3.10"
