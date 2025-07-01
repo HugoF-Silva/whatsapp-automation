@@ -38,7 +38,7 @@ jobs:
             pip install --upgrade pip && \
             # no cache, force fresh download
             pip install --no-cache-dir -r requirements.txt -t package/ && \
-            cp handler.py gemini.py config.py package/ && \
+            cp handler.py gemini.py package/ && \
             cd package && \
             zip -r ../message-checker.zip .
           "
