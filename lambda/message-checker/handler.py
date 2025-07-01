@@ -50,7 +50,7 @@ def lambda_handler(event, context):
     logger.info("Lambda started processing event: %s", event)
     logger.info("Lambda context: %s", context)
 
-    event_body = json.loads(event['body'], ascii=False)
+    event_body = json.loads(event['body'])
     
     date_time_string = event_body['date_time']
 
