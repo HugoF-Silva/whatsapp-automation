@@ -12,7 +12,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "lambda_code" {
-  bucket = var.lambda_code_bucket
+  bucket = "lambda-code-bucket-${var.lambda_code_bucket}"
 
   # optional hardening:
   acl    = "private"
@@ -20,7 +20,7 @@ resource "aws_s3_bucket" "lambda_code" {
     enabled = true
   }
   tags = {
-    Name        = "lambda-code-bucket-${var.deployment_id}"
+    Name        = "lambda-code-bucket"
     Environment = "prod"
   }
 }

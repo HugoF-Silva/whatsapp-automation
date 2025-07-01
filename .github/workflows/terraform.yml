@@ -28,11 +28,20 @@ jobs:
         with:
           terraform_version: "1.5.0"
 
-      - name: Terraform Init & Create Bucket
-        working-directory: terraform
+      - name: Create Lambda S3 bucket if missing
         run: |
-          terraform init && \
-          terraform apply -target=aws_s3_bucket.lambda_code -auto-approve
+          set -e
+          BUCKET="${{ secrets.LAMBDA_CODE_BUCKET }}"
+          # If the bucket exists, this will return 0; if not, 254
+          if aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
+            echo "Bucket $BUCKET already exists, skipping Terraform bucket creation."
+          else
+            echo "Bucket $BUCKET does not exist, running terraform apply -target=aws_s3_bucket.lambda_code"
+            cd terraform
+            terraform init
+            terraform apply -target=aws_s3_bucket.lambda_code -auto-approve
+            cd ..
+          fi
 
       - name: Install zip & upgrade pip
         run: |
