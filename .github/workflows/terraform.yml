@@ -53,18 +53,30 @@ jobs:
       - name: Build message-checker Lambda zip (Amazon Linux)
         run: |
           cd lambda/message-checker
-          docker run --rm -v "$PWD":/var/task "public.ecr.aws/lambda/python:3.10" \
-            /bin/sh -c "pip install --upgrade pip && pip install -r requirements.txt -t build/ && cd build && zip -r ../message-checker.zip . && cd .. && zip -g message-checker.zip handler.py gemini.py config.py"
+          docker run --rm -v "$PWD":/var/task public.ecr.aws/lambda/python:3.10 bash -c "
+            pip install --upgrade pip &&
+            pip install -r requirements.txt -t package/
+          "
+          cp handler.py gemini.py config.py package/
+          cd package
+          zip -r ../message-checker.zip .
+          cd ..
           mkdir -p ../../terraform/build
-          cp message-checker.zip ../../terraform/build/message-checker.zip
+          cp message-checker.zip ../../terraform/build/
 
       - name: Build trigger-api Lambda zip (Amazon Linux)
         run: |
           cd lambda/trigger-api
-          docker run --rm -v "$PWD":/var/task "public.ecr.aws/lambda/python:3.10" \
-            /bin/sh -c "pip install --upgrade pip && pip install -r requirements.txt -t build/ && cd build && zip -r ../trigger-api.zip . && cd .. && zip -g trigger-api.zip handler.py data_store.py config.py models.py schema.py utils.py"
+          docker run --rm -v "$PWD":/var/task public.ecr.aws/lambda/python:3.10 bash -c "
+            pip install --upgrade pip &&
+            pip install -r requirements.txt -t package/
+          "
+          cp handler.py data_store.py config.py models.py schema.py utils.py package/
+          cd package
+          zip -r ../trigger-api.zip .
+          cd ..
           mkdir -p ../../terraform/build
-          cp trigger-api.zip ../../terraform/build/trigger-api.zip
+          cp trigger-api.zip ../../terraform/build/
 
       - name: Upload trigger-api Lambda zip to S3
         run: |
