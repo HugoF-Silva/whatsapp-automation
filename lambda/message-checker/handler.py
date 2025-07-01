@@ -5,6 +5,10 @@ import re
 from gemini import IntentionClassifier, AnswerMan, UnderstandableWaitTime  # adjust import path
 from datetime import datetime, timedelta
 import time
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 http = urllib3.PoolManager()
 
@@ -44,8 +48,9 @@ def merge_estimates_and_routes(all_estimates_obj, route_times_obj):
     return merged
 
 def lambda_handler(event, context):
-    print(f">>>>>>>EVENT: {event}")
-    print(f">>>>>>>CONTEXT: {context}")
+    logger.info("Lambda started processing event: %s", event)
+    logger.info("Lambda context: %s", context)
+
     date_time_string = event[0]['json']['body']['date_time']
     # Parse the date and extract just the hour (as an integer)
     date_obj = datetime.fromisoformat(date_time_string)
