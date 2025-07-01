@@ -67,6 +67,8 @@ resource "aws_lambda_function" "trigger_api" {
   handler       = "handler.lambda_handler"
   runtime       = "python3.10"
   role          = aws_iam_role.lambda_exec.arn
+  s3_bucket     = var.lambda_code_bucket
+  s3_key        = var.lambda_trigger_api_key
 
   environment {
     variables = {

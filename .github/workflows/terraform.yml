@@ -32,19 +32,21 @@ jobs:
         run: |
           cd lambda/message-checker
           pip install -r requirements.txt -t package/
-          cd package && zip -r ../message-checker.zip .
+          cp handler.py gemini.py package/
+          cd package
+          zip -r ../message-checker.zip .
           cd ..
-          zip -g message-checker.zip handler.py gemini.py config.py
           mkdir -p ../../terraform/build
           cp message-checker.zip ../../terraform/build/
-
+          
       - name: Build trigger-api Lambda zip
         run: |
           cd lambda/trigger-api
           pip install -r requirements.txt -t package/
-          cd package && zip -r ../trigger-api.zip .
+          cp handler.py data_store.py config.py models.py schema.py utils.py package/
+          cd package
+          zip -r ../trigger-api.zip .
           cd ..
-          zip -g trigger-api.zip handler.py data_store.py config.py models.py schema.py utils.py
           mkdir -p ../../terraform/build
           cp trigger-api.zip ../../terraform/build/
 
