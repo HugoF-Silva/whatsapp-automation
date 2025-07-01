@@ -11,6 +11,10 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_s3_bucket" "lambda_code" {
+  bucket = var.lambda_code_bucket
+}
+
 ### IAM role for both Lambdas ###
 resource "aws_iam_role" "lambda_exec" {
   name = "whatsapp-lambda-exec-${var.deployment_id}"
@@ -42,7 +46,7 @@ resource "aws_lambda_function" "message_checker" {
   handler       = "handler.lambda_handler"
   runtime       = "python3.10"
   role          = aws_iam_role.lambda_exec.arn
-  s3_bucket     = var.lambda_code_bucket
+  s3_bucket     = data.aws_s3_bucket.lambda_code.bucket
   s3_key        = aws_s3_bucket.lambda_code.bucket
 
   environment {
@@ -67,7 +71,7 @@ resource "aws_lambda_function" "trigger_api" {
   handler       = "handler.lambda_handler"
   runtime       = "python3.10"
   role          = aws_iam_role.lambda_exec.arn
-  s3_bucket     = var.lambda_code_bucket
+  s3_bucket     = data.aws_s3_bucket.lambda_code.bucket
   s3_key        = aws_s3_bucket.lambda_code.bucket
 
   environment {
