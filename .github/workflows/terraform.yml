@@ -17,6 +17,7 @@ jobs:
       TF_VAR_redis_password: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
       TF_VAR_dynamo_table_name: "${{ secrets.DYNAMODB_TABLE_NAME }}"
       TF_VAR_deployment_id: "${{ github.run_id }}"
+      TF_VAR_lambda_code_bucket: ${{ secrets.LAMBDA_CODE_BUCKET }}
 
     steps:
       - name: Checkout
@@ -49,6 +50,10 @@ jobs:
           cd ..
           mkdir -p ../../terraform/build
           cp trigger-api.zip ../../terraform/build/
+
+      - name: Upload trigger-api Lambda zip to S3
+        run: |
+          aws s3 cp terraform/build/trigger-api.zip s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/trigger-api.zip
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2

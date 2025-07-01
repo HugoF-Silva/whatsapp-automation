@@ -33,3 +33,8 @@ variable "deployment_id" {
   description = "Workflow trigger identifier"
   type        = string
 }
+
+variable "lambda_code_bucket" {
+  description = "S3 bucket for Lambda code"
+  type        = string
+}
