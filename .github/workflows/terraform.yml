@@ -23,6 +23,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.5.0"
+
+      - name: Terraform Init & Create Bucket
+        working-directory: terraform
+        run: terraform init && \
+             terraform apply -target=aws_s3_bucket.lambda_code -auto-approve
+
       - name: Install zip & upgrade pip
         run: |
           sudo apt-get update
@@ -58,15 +68,6 @@ jobs:
       - name: Upload trigger-api Lambda zip to S3
         run: |
           aws s3 cp terraform/build/trigger-api.zip s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/trigger-api.zip
-          
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: "1.5.0"
-
-      - name: Terraform Init
-        working-directory: terraform
-        run: terraform init
 
       - name: Terraform Plan
         working-directory: terraform
