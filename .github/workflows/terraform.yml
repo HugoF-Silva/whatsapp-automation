@@ -28,61 +28,49 @@ jobs:
         with:
           terraform_version: "1.5.0"
       
-      - name: Bootstrap Lambda S3 bucket if missing
-        run: |
-          set -e
-          BUCKET="${{ secrets.LAMBDA_CODE_BUCKET }}"
-          if aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
-            echo "Bucket $BUCKET already exists, skipping creation."
-          else
-            echo "Bucket $BUCKET does not exist. Bootstrapping with Terraform."
-            cd terraform-bootstrap
-            terraform init
-            terraform apply -auto-approve \
-              -var="aws_region=${{ secrets.AWS_REGION }}" \
-              -var="lambda_code_bucket=${{ secrets.LAMBDA_CODE_BUCKET }}"
-            cd ..
-          fi
-
-      - name: Install zip & upgrade pip
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y zip
-          python3 -m pip install --upgrade pip
       - name: Build message-checker Lambda zip (Amazon Linux)
         run: |
           cd lambda/message-checker
           docker run --rm -v "$PWD":/var/task --entrypoint bash public.ecr.aws/lambda/python:3.10 -c "
-            yum install -y zip &&
-            pip install --upgrade pip &&
-            rm -rf package/ &&
-            pip install -r requirements.txt -t package/ &&
-            cp handler.py gemini.py package/ &&
-            cd package && zip -r ../message-checker.zip .
+            # clean up any prior install
+            rm -rf package/ && \
+            yum install -y zip && \
+            pip install --upgrade pip && \
+            # no cache, force fresh download
+            pip install --no-cache-dir -r requirements.txt -t package/ && \
+            cp handler.py gemini.py config.py package/ && \
+            cd package && \
+            zip -r ../message-checker.zip .
           "
           mkdir -p ../../terraform/build
           cp message-checker.zip ../../terraform/build/
+
       - name: Build trigger-api Lambda zip (Amazon Linux)
         run: |
           cd lambda/trigger-api
           docker run --rm -v "$PWD":/var/task --entrypoint bash public.ecr.aws/lambda/python:3.10 -c "
-            yum install -y zip &&
-            pip install --upgrade pip &&
-            rm -rf package/ &&
-            pip install -r requirements.txt -t package/ &&
-            cp handler.py data_store.py config.py models.py schema.py utils.py package/ &&
-            cd package && zip -r ../trigger-api.zip .
+            rm -rf package/ && \
+            yum install -y zip && \
+            pip install --upgrade pip && \
+            pip install --no-cache-dir -r requirements.txt -t package/ && \
+            cp handler.py data_store.py config.py models.py schema.py utils.py package/ && \
+            cd package && \
+            zip -r ../trigger-api.zip .
           "
           mkdir -p ../../terraform/build
           cp trigger-api.zip ../../terraform/build/
 
-      - name: Upload trigger-api Lambda zip to S3
+      - name: Upload message-checker Lambda zip to S3 (no cache)
         run: |
-          aws s3 cp terraform/build/trigger-api.zip s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/trigger-api.zip
+          aws s3 cp terraform/build/message-checker.zip \
+            s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/message-checker.zip \
+            --cache-control 'no-cache, no-store, must-revalidate'
 
-      - name: Upload message-checker Lambda zip to S3
+      - name: Upload trigger-api Lambda zip to S3 (no cache)
         run: |
-          aws s3 cp terraform/build/message-checker.zip s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/message-checker.zip
+          aws s3 cp terraform/build/trigger-api.zip \
+            s3://${{ secrets.LAMBDA_CODE_BUCKET }}/lambda/trigger-api.zip \
+            --cache-control 'no-cache, no-store, must-revalidate'
 
       - name: Terraform init
         working-directory: terraform
