@@ -6,6 +6,10 @@ from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_redis import RedisChatMessageHistory
 import re
 import json
+from langchain_redis import RedisChatMessageHistory
+from upstash_redis import Redis
+
+redis = Redis.from_env()
 
 system_prompt = """
 Considere o rigor da formatação JSON.
@@ -91,7 +95,7 @@ class IntentionClassifier:
             raise RuntimeError(f"LLM was not defined. Error: {e}")
 
     def _get_redis_history(self, session_id: str) -> BaseChatMessageHistory:
-        return RedisChatMessageHistory(session_id, redis_url=REDIS_URL)
+        return RedisChatMessageHistory(session_id, redis_client=redis)
 
     def _regenerate_json(self, previous_response):
         response = self.llm.invoke(
@@ -214,7 +218,7 @@ class AnswerMan:
             raise RuntimeError(f"LLM was not defined. Error: {e}")
 
     def _get_redis_history(self, session_id: str) -> BaseChatMessageHistory:
-        return RedisChatMessageHistory(session_id, redis_url=REDIS_URL)
+        return RedisChatMessageHistory(session_id, redis_client=redis)
     
     def execute(self, question):
         print(f"assistant_scope input: {question}")

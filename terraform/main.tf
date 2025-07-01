@@ -75,8 +75,8 @@ resource "aws_lambda_function" "trigger_api" {
 
   environment {
     variables = {
-      REDIS_URL      = var.redis_url
-      REDIS_PASSWORD = var.redis_password
+      UPSTASH_REDIS_REST_URL      = var.redis_url
+      UPSTASH_REDIS_REST_TOKEN    = var.redis_password
       DYNAMO_TABLE   = var.dynamo_table_name
     }
   }

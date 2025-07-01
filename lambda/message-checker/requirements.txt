@@ -3,3 +3,4 @@ langchain-core
 langchain
 pydantic-settings
 langchain-redis
+upstash-redis

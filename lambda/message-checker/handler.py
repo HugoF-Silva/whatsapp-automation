@@ -1,6 +1,5 @@
 import os
 import json
-import redis
 import requests
 import re
 from gemini import IntentionClassifier, AnswerMan, UnderstandableWaitTime  # adjust import path
@@ -8,12 +7,10 @@ from datetime import datetime, timedelta
 import time
 
 # Environment
-REDIS_ENDPOINT   = os.environ['REDIS_ENDPOINT']
+EVO_API_URL = os.environ["EVO_API_URL"]
 TRIGGER_API_URL  = os.environ['TRIGGER_API_URL']
 
-# Clients & classifier (cold start)
-# redis_client = redis.Redis(host=REDIS_ENDPOINT, port=6379)
-classifier   = IntentionClassifier()
+classifier = IntentionClassifier()
 answerman = AnswerMan()
 
 def merge_estimates_and_routes(all_estimates_obj, route_times_obj):
@@ -45,6 +42,8 @@ def merge_estimates_and_routes(all_estimates_obj, route_times_obj):
     return merged
 
 def lambda_handler(event, context):
+    print(f">>>>>>>EVENT: {event}")
+    print(f">>>>>>>CONTEXT: {context}")
     date_time_string = event[0]['json']['body']['date_time']
     # Parse the date and extract just the hour (as an integer)
     date_obj = datetime.fromisoformat(date_time_string)
@@ -85,7 +84,7 @@ def lambda_handler(event, context):
             resp = requests.get(url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
             if (latitude:=resp.get("latitude", None)) and (longitude:=resp.get("longitude", None)):
                 body = json.dump({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
-                resp = requests.post(url="https://api.mttvps.shop/route_times", json=body, timeout=30000)
+                resp = requests.post(url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30000)
             else:
                 behind_the_courtains = "ERRO DE ENVIO DE LOCALIZAÇÃO"
                 classificacao = "erro"
@@ -95,7 +94,7 @@ def lambda_handler(event, context):
             body = json.dump({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
             intent_json = classifier.execute(message)
             if intent_json['classificacao'] == "tempo":
-                resp = requests.get(url=f"https://api.mttvps.shop/route_times/{user_phone}", timeout=20000)
+                resp = requests.get(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20000)
                 if not resp.answer:
                     behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
                     classificacao = "erro"
@@ -116,7 +115,7 @@ def lambda_handler(event, context):
 
                     # Get ISO string in local time (remove the 'Z' at the end)
                     local_iso = date_plus_3.isoformat()
-                    resp = requests.get(f"https://api.mttvps.shop/all_estimates?query_time={local_iso}", timeout=10000)
+                    resp = requests.get(f"{TRIGGER_API_URL}/all_estimates?query_time={local_iso}", timeout=10000)
 
                     if all_estimates_obj := resp.answer:
                         merged = merge_estimates_and_routes(all_estimates_obj, route_times_obj)
@@ -137,7 +136,7 @@ def lambda_handler(event, context):
         latitude = event['item']['json']['body']['data']['message']['locationMessage']['degreesLatitude']
         longitude = event['item']['json']['body']['data']['message']['logationMessage']['degreesLongitude']
         body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
-        resp = requests.post(url="https://api.mttvps.shop/route_times", json=body, timeout=30000)
+        resp = requests.post(url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30000)
 
     else:
         preset = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
@@ -145,7 +144,7 @@ def lambda_handler(event, context):
     
     if resp.answer == "Route times stored":
         time.sleep(1)
-        resp = requests.get(url=f"https://api.mttvps.shop/route_times/{user_phone}", timeout=20000)
+        resp = requests.get(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20000)
         if not resp.answer:
             behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
             classificacao = "erro"
