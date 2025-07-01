@@ -57,7 +57,7 @@ jobs:
             pip install --upgrade pip &&
             rm -rf package/ &&
             pip install -r requirements.txt -t package/ &&
-            cp handler.py gemini.py config.py package/ &&
+            cp handler.py gemini.py package/ &&
             cd package && zip -r ../message-checker.zip .
           "
           mkdir -p ../../terraform/build
