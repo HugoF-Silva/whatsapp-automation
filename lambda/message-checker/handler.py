@@ -1,10 +1,12 @@
 import os
 import json
-import requests
+import urllib3
 import re
 from gemini import IntentionClassifier, AnswerMan, UnderstandableWaitTime  # adjust import path
 from datetime import datetime, timedelta
 import time
+
+http = urllib3.PoolManager()
 
 # Environment
 EVO_API_URL = os.environ["EVO_API_URL"]
@@ -81,10 +83,10 @@ def lambda_handler(event, context):
         pattern = r'^\d{5}-?\d{3}$'
         if re.match(pattern, message): # if cep
             clean_cep = message.replace("-", "")
-            resp = requests.get(url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
-            if (latitude:=resp.get("latitude", None)) and (longitude:=resp.get("longitude", None)):
-                body = json.dump({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
-                resp = requests.post(url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30000)
+            resp = http.request(method="GET", url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
+            if (latitude:=resp.data.get("latitude", None)) and (longitude:=resp.data.get("longitude", None)):
+                body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude }).encode('utf-8')
+                resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)
             else:
                 behind_the_courtains = "ERRO DE ENVIO DE LOCALIZAÇÃO"
                 classificacao = "erro"
@@ -94,14 +96,14 @@ def lambda_handler(event, context):
             body = json.dump({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
             intent_json = classifier.execute(message)
             if intent_json['classificacao'] == "tempo":
-                resp = requests.get(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20000)
-                if not resp.answer:
+                resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+                if not resp.data:
                     behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
                     classificacao = "erro"
                     answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao)
                     mensagem = answerman.execute(message)
                 else:
-                    route_times_obj = resp.answer
+                    route_times_obj = resp.data
 
                     time.sleep(1)
                     # Replace this with your actual input extraction
@@ -115,9 +117,9 @@ def lambda_handler(event, context):
 
                     # Get ISO string in local time (remove the 'Z' at the end)
                     local_iso = date_plus_3.isoformat()
-                    resp = requests.get(f"{TRIGGER_API_URL}/all_estimates?query_time={local_iso}", timeout=10000)
+                    resp = http.request("GET", url=f"{TRIGGER_API_URL}/all_estimates?query_time={local_iso}", timeout=10)
 
-                    if all_estimates_obj := resp.answer:
+                    if all_estimates_obj := resp.data:
                         merged = merge_estimates_and_routes(all_estimates_obj, route_times_obj)
                         understand = UnderstandableWaitTime(merged=merged)
                         mensagem = understand.execute("De forma direta e simples, me diga o total da estimativa de tempo gasto caso eu saia daqui agora, até eu ser atendido por um médico (só o total ida + espera na recepção).")
@@ -136,16 +138,16 @@ def lambda_handler(event, context):
         latitude = event['item']['json']['body']['data']['message']['locationMessage']['degreesLatitude']
         longitude = event['item']['json']['body']['data']['message']['logationMessage']['degreesLongitude']
         body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
-        resp = requests.post(url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30000)
+        resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30)
 
     else:
         preset = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
         return preset
     
-    if resp.answer == "Route times stored":
+    if resp.data == "Route times stored":
         time.sleep(1)
-        resp = requests.get(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20000)
-        if not resp.answer:
+        resp = http.request(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+        if not resp.data:
             behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
             classificacao = "erro"
             answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao)
