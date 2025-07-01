@@ -55,7 +55,7 @@ jobs:
           docker run --rm -v "$PWD":/var/task --entrypoint bash public.ecr.aws/lambda/python:3.10 -c "
             pip install --upgrade pip &&
             pip install -r requirements.txt -t package/ &&
-            cp handler.py gemini.py config.py package/ &&
+            cp handler.py gemini.py package/ &&
             cd package && zip -r ../message-checker.zip .
           "
           mkdir -p ../../terraform/build
