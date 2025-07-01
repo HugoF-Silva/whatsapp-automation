@@ -53,8 +53,8 @@ resource "aws_lambda_function" "message_checker" {
     variables = {
       AUTHENTICATION_API_KEY       = var.auth_api_key
       EVO_API_URL                  = var.evo_api_url
-      REDIS_URL                    = var.redis_url
-      REDIS_PASSWORD               = var.redis_password
+      UPSTASH_REDIS_REST_URL       = var.redis_url
+      UPSTASH_REDIS_REST_TOKEN               = var.redis_password
       TRIGGER_API_URL              = aws_lambda_function_url.trigger_api_url.function_url
     }
   }
@@ -76,8 +76,6 @@ resource "aws_lambda_function" "trigger_api" {
 
   environment {
     variables = {
-      UPSTASH_REDIS_REST_URL      = var.redis_url
-      UPSTASH_REDIS_REST_TOKEN    = var.redis_password
       DYNAMO_TABLE                = var.dynamo_table_name
     }
   }
