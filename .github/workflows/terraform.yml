@@ -22,34 +22,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install zip & upgrade pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip
+          python3 -m pip install --upgrade pip
+
       - name: Build message-checker Lambda zip
         run: |
           cd lambda/message-checker
-          pip install --upgrade pip
           pip install -r requirements.txt -t package/
-          cd package
-          zip -r ../message-checker.zip .
+          cd package && zip -r ../message-checker.zip .
           cd ..
           zip -g message-checker.zip handler.py gemini.py config.py
           mkdir -p ../../terraform/build
-          cp message-checker.zip ../../terraform/build/message-checker.zip
+          cp message-checker.zip ../../terraform/build/
 
       - name: Build trigger-api Lambda zip
         run: |
           cd lambda/trigger-api
-          pip install --upgrade pip
           pip install -r requirements.txt -t package/
-          cd package
-          zip -r ../trigger-api.zip .
+          cd package && zip -r ../trigger-api.zip .
           cd ..
           zip -g trigger-api.zip handler.py data_store.py config.py models.py schema.py utils.py
           mkdir -p ../../terraform/build
-          cp trigger-api.zip ../../terraform/build/trigger-api.zip
-          
-      - name: Install zip
-        run: |
-          sudo apt-get update && sudo apt-get install -y zip
-          python3 -m pip install --upgrade pip
+          cp trigger-api.zip ../../terraform/build/
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
