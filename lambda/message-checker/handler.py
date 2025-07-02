@@ -6,6 +6,10 @@ from gemini import IntentionClassifier, AnswerMan, UnderstandableWaitTime  # adj
 from datetime import datetime, timedelta
 import time
 import logging
+import boto3
+from botocore.exceptions import ClientError
+import hashlib
+from upstash_redis import Redis
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -13,10 +17,50 @@ logger.setLevel(logging.INFO)
 http = urllib3.PoolManager()
 
 # Environment
-EVO_API_URL = os.environ["EVO_API_URL"]
-TRIGGER_API_URL  = os.environ['TRIGGER_API_URL']
+EVO_API_URL = os.getenv("EVO_API_URL")
+TRIGGER_API_URL  = os.getenv('TRIGGER_API_URL')
+r = Redis.from_env()
 
-classifier = IntentionClassifier()
+def save_interaction(user_id: str, user_message: str, llm_answer: str, ttl: int = 14400) -> None:
+    key = f"chat:{user_id}"
+    pair = {"usuário": user_message, "você": llm_answer}
+    r.lpush(key, json.dumps(pair))
+    r.ltrim(key, 0, 14)  # Keep only the last 20 pairs (adjust as needed)
+    r.expire(key, ttl) # 4h
+
+def get_recent_history(user_id: str, limit: int = 3) -> list[str]:
+    key = f"chat:{user_id}"
+    # Get last N items (most recent first)
+    history_jsons = r.lrange(key, 0, limit - 1)
+    # Convert back to Python dict
+    return history_jsons
+
+def hash_pseudonym(pseudonym: str, salt: str) -> str:
+    # Combine pseudonym and salt, encode, hash
+    to_hash = f"{salt}{pseudonym}".encode("utf-8")
+    return hashlib.sha256(to_hash).hexdigest()
+
+def get_secret(secret_name: str):
+    region_name = "us-east-1"
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        # For a list of exceptions thrown, see
+        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+        raise e
+
+    secret = get_secret_value_response['SecretString']
+    return json.loads(secret)
 
 def merge_estimates_and_routes(all_estimates_obj, route_times_obj):
     # Map travel times by unit
@@ -49,12 +93,12 @@ def merge_estimates_and_routes(all_estimates_obj, route_times_obj):
 def lambda_handler(event, context):
     logger.info("Lambda started processing event: %s", event)
     logger.info("Lambda context: %s", context)
-
     event_body = json.loads(event['body'])
     
     date_time_string = event_body['date_time']
 
-    # Parse the date and extract just the hour (as an integer)
+    date_time_string = '2025-07-01T17:05:10.891Z'
+    date_time_string = date_time_string.rstrip('Z')  # Remove the 'Z'
     date_obj = datetime.fromisoformat(date_time_string)
     hour_int = date_obj.hour
 
@@ -62,8 +106,20 @@ def lambda_handler(event, context):
         preset = "Não calculo tempo de espera entre 21:00 ~ 05:00, nem finais de semana...                                                                                    Um segredo que só quem é da comunidade Menos Tempo sabe: *eu conseguiria* se você dissesse que quer a Menos Tempo oficialmente pelo link bit.ly/quero-oficialmente 🤏 (não conta pra ninguém, é exclusivo 🤫)"
         return preset
     
-    type = event['item']['json']['body']['data']['messageType']
-    user_phone = event['item']['json']['body']['data']['messageType']
+    type = event_body['data']['messageType']
+    user_phone = event_body['data']['messageType']
+    secret = get_secret("pseodonym/salt")['SALT']
+    cripto_number = hash_pseudonym(user_phone, secret)
+
+    history = get_recent_history(f"{cripto_number}", 3)
+    content = ""
+    if history:
+        content = f"""
+## Histórico de mensagens
+Interações mais recentes entre o usuário e você.
+{history}
+"""            
+    classifier = IntentionClassifier(history=content)
 
     if (type == "conversation"):
         try:
@@ -97,18 +153,35 @@ def lambda_handler(event, context):
             else:
                 behind_the_courtains = "ERRO DE ENVIO DE LOCALIZAÇÃO"
                 classificacao = "erro"
-                answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao)
+                history1 = get_recent_history(f"1_{cripto_number}", 3)
+                content1 = ""
+                if history1:
+                    content1 = f"""
+## Histórico de mensagens
+Interações mais recentes entre o usuário e você.
+{history1}
+"""        
+                answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
                 mensagem = answerman.execute(message)
-        else:
-            body = json.dump({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
+        else: # not cep
             intent_json = classifier.execute(message)
+            save_interaction(f"{cripto_number}", message, json.dumps(intent_json))
             if intent_json['classificacao'] == "tempo":
                 resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
                 if not resp.data:
                     behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
                     classificacao = "erro"
-                    answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao)
+                    history1 = get_recent_history(f"1_{cripto_number}", 3)
+                    content1 = ""
+                    if history1:
+                        content1 = f"""
+## Histórico de mensagens
+Interações mais recentes entre o usuário e você.
+{history1}
+"""        
+                    answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
                     mensagem = answerman.execute(message)
+                    save_interaction(f"1_{cripto_number}", message, mensagem)
                 else:
                     route_times_obj = resp.data
 
@@ -132,8 +205,19 @@ def lambda_handler(event, context):
                     else:
                         behind_the_courtains = "O USUÁRIO BUSCOU SABER O TEMPO NUM HORÁRIO QUE O SISTEMA NÃO ESTÁ DISPONÍVEL. PORTANTO NÃO É POSSÍVEL CALCULAR TEMPO. HORÁRIOS QUE O SISTEMA ESTÁ INDISPONÍVEI: HORÁRIOS DE BAIXA MOVIMENTAÇÃO (FINAIS DE SEMANA, E 21:00 DA NOITE AS 05:00 DA MANHÃ). O USUÁRIO DEVERIA TENTAR INTERAGIR NOVAMENTE MAIS TARDE. INFORME O "
                         classificacao = "erro"
-                        answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao)
+                        cache_key1 = f"item:1_{cripto_number}"
+                        cached_item1 = r.get(cache_key1)
+                        history1 = get_recent_history(f"1_{cripto_number}", 3)
+                        content1 = ""
+                        if history1:
+                            content1 = f"""
+## Histórico de mensagens
+Interações mais recentes entre o usuário e você.
+{history1}
+"""        
+                        answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
                         mensagem = answerman.execute(message)
+                        save_interaction(f"1_{cripto_number}", message, mensagem)
 
             elif intent_json['classificacao'] == "ajudar" or intent_json == "outro":
                 behind_the_courtains = intent_json['raciocinio']
@@ -155,13 +239,32 @@ def lambda_handler(event, context):
         if not resp.data:
             behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
             classificacao = "erro"
-            answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao)
+            history1 = get_recent_history(f"1_{cripto_number}", 3)
+            content1 = ""
+            if history1:
+                content1 = f"""
+## Histórico de mensagens
+Interações mais recentes entre o usuário e você.
+{history1}
+"""        
+            answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
             mensagem = answerman.execute(message)
+            save_interaction(f"1_{cripto_number}", message, mensagem)
+
 
     else:
         behind_the_courtains = "ERRO DE ENVIO DE LOCALIZAÇÃO"
         classificacao = "erro"
-        answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao)
+
+        history1 = get_recent_history(f"1_{cripto_number}", 3)
+        content1 = ""
+        if history1:
+            content1 = f"""
+## Histórico de mensagens
+Interações mais recentes entre o usuário e você.
+{history1}
+"""        
+        answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
         mensagem = answerman.execute(message)
-    
+        save_interaction(f"1_{cripto_number}", message, mensagem)
     return mensagem
