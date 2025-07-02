@@ -336,4 +336,5 @@ Interações mais recentes entre o usuário e você.
         answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
         mensagem = answerman.execute(message)
         save_interaction(f"1_{cripto_number}", message, mensagem)
+        print(f"return: {mensagem}")
     return mensagem
