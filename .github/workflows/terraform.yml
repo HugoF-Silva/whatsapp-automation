@@ -19,6 +19,7 @@ jobs:
       TF_VAR_deployment_id: "${{ github.run_id }}"
       TF_VAR_lambda_code_bucket: ${{ secrets.LAMBDA_CODE_BUCKET }}
       TF_VAR_google_api_key: ${{ secrets.GOOGLE_API_KEY}}
+      TF_VAR_lambda_secret_permission: ${{ secrets.LAMBDA_SECRET_PERMISSION }}
 
     steps:
       - name: Checkout

@@ -15,6 +15,10 @@ data "aws_s3_bucket" "lambda_code" {
   bucket = var.lambda_code_bucket
 }
 
+data "aws_iam_policy" "secretsmanager_get" {
+  permission = var.lambda_secret_permission
+}
+
 ### IAM role for both Lambdas ###
 resource "aws_iam_role" "lambda_exec" {
   name = "whatsapp-lambda-exec-${var.deployment_id}"
@@ -33,22 +37,6 @@ data "aws_iam_policy_document" "lambda_assume" {
 
 data "aws_caller_identity" "current" {}
 
-resource "aws_iam_policy" "secretsmanager_get" {
-  name = "allow-get-secret-pseodonym-salt"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = [
-          "secretsmanager:GetSecretValue"
-        ]
-        Resource = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:pseodonym/salt*"
-      }
-    ]
-  })
-}
-
 resource "aws_iam_role_policy_attachment" "lambda_basic" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
@@ -61,7 +49,7 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamo_redis" {
 
 resource "aws_iam_role_policy_attachment" "lambda_secrets" {
   role       = aws_iam_role.lambda_exec.name
-  policy_arn = aws_iam_policy.secretsmanager_get.arn
+  policy_arn = data.aws_iam_policy.secretsmanager_get.permission.arn
 }
 
 resource "aws_lambda_function" "message_checker" {
