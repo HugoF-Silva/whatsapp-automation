@@ -25,6 +25,7 @@ resource "aws_s3_bucket" "lambda_code" {
   }
 }
 
+
 resource "aws_iam_policy" "secretsmanager_get" {
   name = var.lambda_secret_permission
   policy = jsonencode({

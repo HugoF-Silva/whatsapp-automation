@@ -16,7 +16,7 @@ data "aws_s3_bucket" "lambda_code" {
 }
 
 data "aws_iam_policy" "secretsmanager_get" {
-  arn = var.lambda_secret_permission
+  name = var.lambda_secret_permission
 }
 
 ### IAM role for both Lambdas ###
@@ -47,9 +47,15 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamo_redis" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 }
 
+module "bootstrap" {
+  source                   = "./terraform-bootstrap"
+  lambda_secret_permission = var.lambda_secret_permission
+  # pass any other required variables here
+}
+
 resource "aws_iam_role_policy_attachment" "lambda_secrets" {
   role       = aws_iam_role.lambda_exec.name
-  policy_arn = data.aws_iam_policy.secretsmanager_get.arn
+  policy_arn = module.bootstrap.lambda_secret_permission_arn
 }
 
 resource "aws_lambda_function" "message_checker" {

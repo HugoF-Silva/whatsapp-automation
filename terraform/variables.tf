@@ -45,6 +45,6 @@ variable "google_api_key" {
 }
 
 variable "lambda_secret_permission" {
-  description = "S3 bucket for Lambda code"
+  description = "Name of the Lambda IAM policy"
   type        = string
 }
