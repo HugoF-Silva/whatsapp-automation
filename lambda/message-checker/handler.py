@@ -107,9 +107,9 @@ def lambda_handler(event, context):
     logger.info("Hours: %d", hour_int)
 
     if (hour_int < 5) or (hour_int >= 21):
-        preset = "Não calculo tempo de espera entre 21:00 ~ 05:00, nem finais de semana...                                                                                    Um segredo que só quem é da comunidade Menos Tempo sabe: *eu conseguiria* se você dissesse que quer a Menos Tempo oficialmente pelo link bit.ly/quero-oficialmente 🤏 (não conta pra ninguém, é exclusivo 🤫)"
-        logger.info("Entered preset clause")
-        return preset
+        mensagem = "Não calculo tempo de espera entre 21:00 ~ 05:00, nem finais de semana...                                                                                    Um segredo que só quem é da comunidade Menos Tempo sabe: *eu conseguiria* se você dissesse que quer a Menos Tempo oficialmente pelo link bit.ly/quero-oficialmente 🤏 (não conta pra ninguém, é exclusivo 🤫)"
+        logger.info("Entered mensagem clause")
+        
     
     type = event_body['data']['messageType']
     user_phone = event_body['data']['messageType']
@@ -296,15 +296,11 @@ Interações mais recentes entre o usuário e você.
             save_interaction(f"1_{cripto_number}", message, mensagem)
 
     else:
-        preset = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
-        print(f"return: {preset}")
-        return preset
-    
+        mensagem = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
+        print(f"return: {mensagem}")
+        
+    url = "https://evolutionapi.vpsmtt.shop/message/sendText/9D46768C81C2-4524-A4DA-A73E42EF3639"
 
-    return {
-        "statusCode": 200,
-        "body": mensagem
-    }
 
 def estimate(date_time_string, cripto_number, message, resp):
     route_times_obj = resp["data"]["results"]
