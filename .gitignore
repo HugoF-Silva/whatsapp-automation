@@ -40,3 +40,9 @@ terraform.rc
 /*/.env
 
 mt00
+__pycache__
+
+l1.py
+
+curls.txt
+read.md

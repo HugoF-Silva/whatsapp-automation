@@ -48,10 +48,10 @@ Ajudar a população:
 A Menos Tempo mitiga filas lotadas das unidades públicas ao dar previsibilidade para as pessoas.
 
 ## Exemplo json
-{
+{{
 "raciocinio": <insira_aqui_seu_raciocinio>,
 "classificacao": <insira_aqui_sua_classificacao>
-}
+}}
 
 ## Seu papel absoluto
 Você é um assistente.
@@ -70,7 +70,7 @@ class IntentionClassifier:
         self.qa_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", system_prompt),
-                ("human", "{question}"),
+                ("human", "{input}"),
             ]
         ).partial(history=history)
 
@@ -104,7 +104,7 @@ class IntentionClassifier:
         )
         return json.loads(response.content)
     
-    def execute(self, question, cripto_number):
+    def execute(self, question):
         print(f"assistant_scope input: {question}")
         output_scope = self.scope_chain.invoke({"input": question})
         output_scope = re.sub(r'```json|```', '', output_scope).strip()
@@ -114,7 +114,7 @@ class IntentionClassifier:
             output_scope = self._regenerate_json(output_scope)
             output_scope = re.sub(r'```json|```', '', output_scope).strip()
         if isinstance(output_scope, str):
-            output_scope = json.loads(output_scope, ensure_ascii=False)
+            output_scope = json.loads(output_scope)
         return output_scope
     
 system_prompt2 = """
@@ -182,16 +182,16 @@ https://docs.google.com/forms/d/e/1FAIpQLSfKsi_p7Dv37tZaY_CUCGDXcvJWwsCSUdmboIa-
 """
 
 class AnswerMan:
-    def __init__(self, behind_the_courtains, classificacao):
+    def __init__(self, behind_the_courtains, classificacao, sect_history):
         # Instanciando a classe ChatOpenAI
         self.llm = self._set_llm()
 
         self.qa_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", system_prompt2),
-                ("human", "{question}"),
+                ("human", "{input}"),
             ]
-        ).partial(behind_the_courtains=behind_the_courtains, classificacao=classificacao, history=history)
+        ).partial(behind_the_courtains=behind_the_courtains, classificacao=classificacao, history=sect_history)
 
         # Criando a cadeia de execução da llm
         self.scope_chain = (
@@ -213,7 +213,7 @@ class AnswerMan:
         except Exception as e:
             raise RuntimeError(f"LLM was not defined. Error: {e}")
 
-    def execute(self, question, cripto_number):
+    def execute(self, question):
         print(f"assistant_scope input: {question}")
         output_scope = self.scope_chain.invoke({"input": question})
         return output_scope
@@ -247,7 +247,7 @@ class UnderstandableWaitTime:
         self.qa_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", system_prompt3),
-                ("human", "{question}"),
+                ("human", "{input}"),
             ]
         ).partial(merged=merged)
 
