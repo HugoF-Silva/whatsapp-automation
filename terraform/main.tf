@@ -60,6 +60,8 @@ resource "aws_lambda_function" "message_checker" {
   s3_bucket     = data.aws_s3_bucket.lambda_code.bucket
   s3_key        = "lambda/message-checker.zip"
 
+  timeout=5
+
   environment {
     variables = {
       AUTHENTICATION_API_KEY       = var.auth_api_key
