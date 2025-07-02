@@ -297,10 +297,14 @@ Interações mais recentes entre o usuário e você.
 
     else:
         preset = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
+        print(f"return: {preset}")
         return preset
     
 
-    return mensagem
+    return {
+        "statusCode": 200,
+        "body": mensagem
+    }
 
 def estimate(date_time_string, cripto_number, message, resp):
     route_times_obj = resp["data"]["results"]
