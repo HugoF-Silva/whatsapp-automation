@@ -16,7 +16,7 @@ data "aws_s3_bucket" "lambda_code" {
 }
 
 data "aws_iam_policy" "secretsmanager_get" {
-  permission = var.lambda_secret_permission
+  arn = var.lambda_secret_permission
 }
 
 ### IAM role for both Lambdas ###
@@ -49,7 +49,7 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamo_redis" {
 
 resource "aws_iam_role_policy_attachment" "lambda_secrets" {
   role       = aws_iam_role.lambda_exec.name
-  policy_arn = data.aws_iam_policy.secretsmanager_get.permission.arn
+  policy_arn = data.aws_iam_policy.secretsmanager_get.arn
 }
 
 resource "aws_lambda_function" "message_checker" {
