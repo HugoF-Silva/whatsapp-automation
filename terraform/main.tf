@@ -61,6 +61,7 @@ resource "aws_lambda_function" "message_checker" {
   s3_key        = "lambda/message-checker.zip"
 
   timeout=900
+  memory_size=256
 
   environment {
     variables = {
