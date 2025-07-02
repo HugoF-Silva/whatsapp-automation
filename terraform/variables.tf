@@ -44,7 +44,7 @@ variable "google_api_key" {
   type        = string
 }
 
-variable "google_api_key" {
+variable "lambda_secret_permission" {
   description = "S3 bucket for Lambda code"
   type        = string
 }
