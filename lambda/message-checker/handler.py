@@ -115,7 +115,7 @@ def lambda_handler(event, context):
         
     
     type = event_body['data']['messageType']
-    user_phone = event_body['data']['messageType']
+    user_phone = event_body['data']['key']['remoteJid']
     secret = get_secret("pseodonym/salt")['SALT']
     cripto_number = hash_pseudonym(user_phone, secret)
 
