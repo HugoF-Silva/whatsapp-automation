@@ -115,7 +115,7 @@ class IntentionClassifier:
             output_scope = str(output_scope)
             output_scope = re.sub(r'```json|```', '', output_scope).strip()
             output_scope = json.loads(output_scope)
-            
+
         return output_scope
     
 system_prompt2 = """
@@ -276,10 +276,3 @@ class UnderstandableWaitTime:
         print(f"assistant_scope input: {question}")
         output_scope = self.scope_chain.invoke({"input": question})
         return output_scope
-    
-if __name__ == "__main__":
-    ba = IntentionClassifier(history="d")
-    result= ba._regenerate_json("{{estranho: jogo}}")
-    result = str(result)
-    result = re.sub(r'```json|```', '', result).strip()
-    print(result)
