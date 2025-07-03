@@ -48,3 +48,8 @@ variable "lambda_secret_permission" {
   description = "Name of the Lambda IAM policy"
   type        = string
 }
+
+variable "instance_name" {
+  description = "Name of the Lambda IAM policy"
+  type        = string
+}
