@@ -302,7 +302,7 @@ Interações mais recentes entre o usuário e você.
         mensagem = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
         print(f"return: {mensagem}")
     
-    url = f"https://{EVO_API_URL}/message/sendText/{INSTANCE_NAME}/"
+    url = f"https://{EVO_API_URL}/message/sendText/{INSTANCE_NAME}"
     
     payload = {
     "number": user_phone,
@@ -316,7 +316,7 @@ Interações mais recentes entre o usuário e você.
     
     response = http.request("POST", url=url, json=payload, headers=headers)
     print(url)
-    print(response.text)
+    print(response.data.decode('utf-8'))
 
 
 def estimate(date_time_string, cripto_number, message, resp):
