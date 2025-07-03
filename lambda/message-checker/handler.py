@@ -299,14 +299,14 @@ Interações mais recentes entre o usuário e você.
         mensagem = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
         print(f"return: {mensagem}")
         
-    url = "https://{EVOAPI_URL}/message/sendText/{INSTANCE_NAME}/"
+    url = f"https://{os.environ["EVO_API_URL"]}/message/sendText/{os.environ["INSTANCE_NAME"]}/"
     
     payload = {
     "number": user_phone,
     "text": mensagem
     }
     headers = {
-    "apikey": "{AUTHENTICATION_API_KEY}",
+    "apikey": os.environ["AUTHENTICATION_API_KEY"],
     "Content-Type": "application/json"
     }
 
