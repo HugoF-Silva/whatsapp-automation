@@ -313,7 +313,10 @@ Interações mais recentes entre o usuário e você.
     "Content-Type": "application/json"
     }
 
-    http.request("POST", url=url, json=payload, headers=headers)
+    
+    response = http.request("POST", url=url, json=payload, headers=headers)
+    print(url)
+    print(response.text)
 
 
 def estimate(date_time_string, cripto_number, message, resp):
