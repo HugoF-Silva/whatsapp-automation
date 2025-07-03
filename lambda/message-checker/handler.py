@@ -20,6 +20,8 @@ http = urllib3.PoolManager()
 # Environment
 EVO_API_URL = os.getenv("EVO_API_URL")
 TRIGGER_API_URL  = os.getenv('TRIGGER_API_URL')
+AUTHENTICATION_API_KEY = os.getenv("AUTHENTICATION_API_KEY")
+INSTANCE_NAME = os.getenv("INSTANCE_NAME")
 r = Redis.from_env()
 
 def save_interaction(user_id: str, user_message: str, llm_answer: str, ttl: int = 14400) -> None:
@@ -298,15 +300,15 @@ Interações mais recentes entre o usuário e você.
     else:
         mensagem = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
         print(f"return: {mensagem}")
-        
-    url = f"https://{os.environ["EVO_API_URL"]}/message/sendText/{os.environ["INSTANCE_NAME"]}/"
+    
+    url = f"https://{EVO_API_URL}/message/sendText/{INSTANCE_NAME}/"
     
     payload = {
     "number": user_phone,
     "text": mensagem
     }
     headers = {
-    "apikey": os.environ["AUTHENTICATION_API_KEY"],
+    "apikey": AUTHENTICATION_API_KEY,
     "Content-Type": "application/json"
     }
 
