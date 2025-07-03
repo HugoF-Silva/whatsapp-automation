@@ -24,6 +24,7 @@ AUTHENTICATION_API_KEY = os.getenv("AUTHENTICATION_API_KEY")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME")
 r = Redis.from_env()
 
+
 def save_interaction(user_id: str, user_message: str, llm_answer: str, ttl: int = 14400) -> None:
     key = f"chat:{user_id}"
     pair = {"usuário": user_message, "você": llm_answer}
