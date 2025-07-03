@@ -299,7 +299,18 @@ Interações mais recentes entre o usuário e você.
         mensagem = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
         print(f"return: {mensagem}")
         
-    url = "https://evolutionapi.vpsmtt.shop/message/sendText/9D46768C81C2-4524-A4DA-A73E42EF3639"
+    url = "https://{EVOAPI_URL}/message/sendText/{INSTANCE_NAME}/"
+    
+    payload = {
+    "number": user_phone,
+    "text": mensagem
+    }
+    headers = {
+    "apikey": "{AUTHENTICATION_API_KEY}",
+    "Content-Type": "application/json"
+    }
+
+    http.request("POST", url=url, json=payload, headers=headers)
 
 
 def estimate(date_time_string, cripto_number, message, resp):
