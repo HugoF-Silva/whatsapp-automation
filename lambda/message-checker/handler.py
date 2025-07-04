@@ -114,7 +114,7 @@ def lambda_handler(event, context):
         logger.info("Entered mensagem clause")
         
     
-    type = event_body['data']['messageType']
+    type_msg = event_body['data']['messageType']
     user_phone = event_body['data']['key']['remoteJid']
     secret = get_secret("pseodonym/salt")['SALT']
     cripto_number = hash_pseudonym(user_phone, secret)
@@ -129,7 +129,7 @@ Interações mais recentes entre o usuário e você.
 """            
     classifier = IntentionClassifier(history=content)
 
-    if (type == "conversation"):
+    if (type_msg == "conversation"):
         try:
             message = event_body['data']['message']['conversation']
             
@@ -216,7 +216,8 @@ Interações mais recentes entre o usuário e você.
                 mensagem = answerman.execute(message)
         else: # not cep
             intent_json = classifier.execute(message)
-            intent_json = json.dumps(intent_json)
+            print(intent_json)
+            print(type(intent_json))
             save_interaction(f"{cripto_number}", message, intent_json)
             if intent_json['classificacao'] == "tempo":
                 # resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
@@ -253,7 +254,7 @@ Interações mais recentes entre o usuário e você.
                 mensagem = answerman.execute(message)
                 save_interaction(f"1_{cripto_number}", message, mensagem)
 
-    elif (type == "locationMessage"):
+    elif (type_msg == "locationMessage"):
         latitude = event_body['data']['message']['locationMessage']['degreesLatitude']
         longitude = event_body['data']['message']['logationMessage']['degreesLongitude']
         body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })

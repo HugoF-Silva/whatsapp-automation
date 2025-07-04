@@ -107,25 +107,24 @@ class IntentionClassifier:
     def execute(self, question):
         print(f"assistant_scope input: {question}")
         output_scope = self.scope_chain.invoke({"input": question})
-        output_scope = re.sub(r'```json|```', '', output_scope).strip()
-        print(output_scope)
+        result = re.sub(r'```json|```', '', output_scope).strip()
         try: 
-            json.loads(output_scope)
+            json.loads(result)
         except json.decoder.JSONDecodeError:
-            result = self._regenerate_json(output_scope)
+            result = self._regenerate_json(result)
             if isinstance(result, (dict, list)):
                 # Safely convert dict/list to JSON string
-                result_str = json.dumps(result)
+                result = json.dumps(result)
             else:
-                result_str = str(result)
+                result = str(result)
 
             # Now you can clean it if needed
-            result_str = re.sub(r'```json|```', '', result_str).strip()
+            result = re.sub(r'```json|```', '', result).strip()
 
             # And now it's safe to load as JSON
-            result = json.loads(result_str)
+        result = json.loads(result)
 
-        return output_scope
+        return result
     
 system_prompt2 = """
 # CONTEXTO
