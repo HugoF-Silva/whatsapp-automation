@@ -89,7 +89,8 @@ resource "aws_lambda_function" "trigger_api" {
   role          = aws_iam_role.lambda_exec.arn
   s3_bucket     = data.aws_s3_bucket.lambda_code.bucket
   s3_key        = "lambda/trigger-api.zip"
-
+  timeout =900
+  memory_size=256
   environment {
     variables = {
       DYNAMO_TABLE                = var.dynamo_table_name
