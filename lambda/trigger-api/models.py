@@ -32,15 +32,6 @@ from zoneinfo import ZoneInfo
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class AdminConfig:
-    def __init__(self):
-        secret = get_secret("admin/login")
-        self.region = "us-east-1"
-        self.USER_POOL_ID = secret['userPoolId']
-        self.COGNITO_AUDIENCE = secret['clientId']
-        self.COGNITO_ISSUER = f"https://cognito-idp.{self.region}.amazonaws.com/{self.USER_POOL_ID}"
-        self.JWKS_URL = f"{self.COGNITO_ISSUER}/.well-known/jwks.json"
-
 class WaitTimeEstimator:
     def __init__(self, datastore: DataStore):
         self.ds = datastore

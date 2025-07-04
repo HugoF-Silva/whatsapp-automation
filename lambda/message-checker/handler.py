@@ -159,14 +159,16 @@ Interações mais recentes entre o usuário e você.
             if (latitude:=resp_data.get("latitude", None)) and (longitude:=resp_data.get("longitude", None)):
                 body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude }).encode('utf-8')
                 print(f"TRIGGER_API_URL: {TRIGGER_API_URL}")
-                # resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)
-                resp = {"message":"Route times stored."}
+                resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)
+                # resp = {"message":"Route times stored."}
+                resp = resp.data.decode('utf-8')
+                print(resp)
                 resp_data = resp['message']
                 # resp_data = json.loads(resp.data)
                 if resp_data == "Route times stored.":
                     time.sleep(1)
-                    # resp = http.request(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
-                    resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
+                    resp = http.request(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+                    # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
                     # resp = {"data": """{"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}"""}
                     if not resp['data']:
                         behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
@@ -220,8 +222,8 @@ Interações mais recentes entre o usuário e você.
             print(type(intent_json))
             save_interaction(f"{cripto_number}", message, intent_json)
             if intent_json['classificacao'] == "tempo":
-                # resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
-                resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
+                resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+                # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
                 if not resp['data']:
                     behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
                     classificacao = "erro"
@@ -258,14 +260,14 @@ Interações mais recentes entre o usuário e você.
         latitude = event_body['data']['message']['locationMessage']['degreesLatitude']
         longitude = event_body['data']['message']['logationMessage']['degreesLongitude']
         body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
-        # resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30)
-        resp = {"message":"Route times stored."}
+        resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30)
+        # resp = {"message":"Route times stored."}
 
         if json.loads(resp['message']) == "Route times stored":
             time.sleep(1)
-            resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
+            # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
             # resp = {"data": """{"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}"""}
-            # resp = http.request(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+            resp = http.request(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
             if not resp['data']:
                 behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
                 classificacao = "erro"
@@ -334,8 +336,8 @@ def estimate(date_time_string, cripto_number, message, resp):
 
     # Get ISO string in local time (remove the 'Z' at the end)
     local_iso = date_plus_3.isoformat()
-    # resp = http.request("GET", url=f"{TRIGGER_API_URL}/all_estimates?query_time={local_iso}", timeout=10)
-    resp = {"estimates":[{"unit":"CAIS Cândida de Morais","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"Cais Finsocial","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"UPA Região Noroeste","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"CIAMS Urias Magalhães","blue":0.0,"green":104.43382078017407,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"UPA Campinas","blue":0.0,"green":167.78984738678312,"yellow":0.0,"orange":0.0,"red":0.0}],"query_time":"2025-07-02T20:05:10.891000Z"}
+    resp = http.request("GET", url=f"{TRIGGER_API_URL}/all_estimates?query_time={local_iso}", timeout=10)
+    # resp = {"estimates":[{"unit":"CAIS Cândida de Morais","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"Cais Finsocial","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"UPA Região Noroeste","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"CIAMS Urias Magalhães","blue":0.0,"green":104.43382078017407,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"UPA Campinas","blue":0.0,"green":167.78984738678312,"yellow":0.0,"orange":0.0,"red":0.0}],"query_time":"2025-07-02T20:05:10.891000Z"}
     if all_estimates_obj := resp:
         merged = merge_estimates_and_routes(all_estimates_obj, route_times_obj)
         understand = UnderstandableWaitTime(merged=merged)

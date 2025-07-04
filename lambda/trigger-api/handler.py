@@ -5,7 +5,7 @@ from schema import (
     RouteTimeRequest, RouteTimeResponse, RouteTimeResult
 )
 from data_store import DataStore
-from models import WaitTimeEstimator, AdminConfig
+from models import WaitTimeEstimator
 from datetime import datetime, timezone
 from utils import get_route_time
 import requests
@@ -16,7 +16,6 @@ from mangum import Mangum
 app = FastAPI()
 datastore = DataStore()
 estimator = WaitTimeEstimator(datastore)
-adminconfig = AdminConfig()
 
 from fastapi.middleware.cors import CORSMiddleware
 import logging
@@ -33,56 +32,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-async def get_jwk_keys():
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(adminconfig.JWKS_URL)
-        return resp.json()["keys"]
-
-async def verify_jwt(request: Request):
-    auth = request.headers.get("authorization")
-    if not auth or not auth.lower().startswith("bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing or invalid authorization header")
-    token = auth.split(" ")[1]
-    try:
-        unverified_header = jwt.get_unverified_header(token)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token header")
-    jwks = await get_jwk_keys()
-    rsa_key = {}
-    for key in jwks:
-        if key["kid"] == unverified_header["kid"]:
-            rsa_key = {
-                "kty": key["kty"],
-                "kid": key["kid"],
-                "use": key["use"],
-                "n": key["n"],
-                "e": key["e"]
-            }
-    if not rsa_key:
-        raise HTTPException(status_code=401, detail="Public key not found in JWKS")
-    try:
-        payload = jwt.decode(
-            token,
-            rsa_key,
-            algorithms=["RS256"],
-            audience=adminconfig.COGNITO_AUDIENCE,   # your clientId
-            issuer=adminconfig.COGNITO_ISSUER
-        )
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.JWTClaimsError:
-        raise HTTPException(status_code=401, detail="Invalid claims")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return payload  # You can return user info from here
-
 @app.get("/health", response_model=HealthCheckResponse)
 def health():
     return HealthCheckResponse(status="ok")
-
-@app.get("/api/protected")
-async def protected_route(payload=Depends(verify_jwt)):
-    return {"status": "ok", "user": payload}
 
 @app.post("/register_unit", response_model=RegisterUnitResponse)
 def register_unit(req: RegisterUnitRequest):
@@ -101,17 +53,6 @@ def register_unit(req: RegisterUnitRequest):
         lng=item.get("lng"),
         message="Unit registered"
     )
-
-@app.post("/annotate")
-def annotate_event(event: AnnotateEventRequest, payload=Depends(verify_jwt)):
-    dt = datastore.ingest_event(
-        pseudonym=event.pseudonym,
-        unit=event.unit,
-        event_type=event.event_type,
-        risk_color=event.risk_color,
-        timestamp=event.timestamp
-    )
-    return {"message": "Event processed.", "delta_t": dt}
 
 @app.post("/estimate", response_model=EstimateResponse)
 def estimate_wait_time(req: EstimateRequest):
