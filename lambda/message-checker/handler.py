@@ -216,7 +216,8 @@ Interações mais recentes entre o usuário e você.
                 mensagem = answerman.execute(message)
         else: # not cep
             intent_json = classifier.execute(message)
-            save_interaction(f"{cripto_number}", message, json.dumps(intent_json))
+            intent_json = json.dumps(intent_json)
+            save_interaction(f"{cripto_number}", message, intent_json)
             if intent_json['classificacao'] == "tempo":
                 # resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
                 resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
