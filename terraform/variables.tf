@@ -53,3 +53,8 @@ variable "instance_name" {
   description = "Name of the Lambda IAM policy"
   type        = string
 }
+
+variable "open_cage_key" {
+  description = "Name of the Lambda IAM policy"
+  type        = string
+}

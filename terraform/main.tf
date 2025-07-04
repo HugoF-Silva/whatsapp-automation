@@ -72,6 +72,7 @@ resource "aws_lambda_function" "message_checker" {
       TRIGGER_API_URL              = aws_lambda_function_url.trigger_api_url.function_url
       GOOGLE_API_KEY = var.google_api_key
       INSTANCE_NAME = var.instance_name
+      OPEN_CAGE_KEY = var.open_cage_key
     }
   }
 }

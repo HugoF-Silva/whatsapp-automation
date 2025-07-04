@@ -22,6 +22,7 @@ EVO_API_URL = os.getenv("EVO_API_URL")
 TRIGGER_API_URL  = os.getenv('TRIGGER_API_URL')
 AUTHENTICATION_API_KEY = os.getenv("AUTHENTICATION_API_KEY")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME")
+OPEN_CAGE_KEY = os.getenv("OPEN_CAGE_KEY")
 r = Redis.from_env()
 
 
@@ -154,9 +155,9 @@ Interações mais recentes entre o usuário e você.
         pattern = r'^\d{5}-?\d{3}$'
         if re.match(pattern, message): # if cep
             clean_cep = message.replace("-", "")
-            resp = http.request(method="GET", url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
-            resp_data = json.loads(resp.data)
-            if (latitude:=resp_data.get("latitude", None)) and (longitude:=resp_data.get("longitude", None)):
+            resp = http.request(method="GET", url=f"https://api.opencagedata.com/geocode/v1/json?q={clean_cep}&key={OPEN_CAGE_KEY}")
+            resp_data = json.loads(resp.data.decode("utf-8"))
+            if (latitude:=resp_data["results"][0]["geometry"].get("lat", None)) and (longitude:=resp_data["results"][0]["geometry"].get("lng", None)):
                 body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude }).encode('utf-8')
                 print(f"TRIGGER_API_URL: {TRIGGER_API_URL}")
                 resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)
