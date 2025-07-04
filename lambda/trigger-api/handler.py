@@ -155,3 +155,6 @@ def cep_lookup(cep: str):
     return resp.json() 
 
 handler = Mangum(app)
+
+def lambda_handler(event, context):
+    return handler(event, context)
