@@ -149,6 +149,7 @@ def get_route_time(client, name, start_lat, start_lng, end_lat, end_lng):
     try:
         # This is a synchronous boto3 call; for heavy load you could
         # offload it into run_in_executor if you prefer not to block.
+        logger.info("Calculating route...")
         route = client.calculate_route(
             CalculatorName=name,
             DeparturePosition=[start_lng, start_lat],
@@ -158,9 +159,11 @@ def get_route_time(client, name, start_lat, start_lng, end_lat, end_lng):
             IncludeLegGeometry=False,
             DepartNow=True
         )
+        logger.info("Route calculated!")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+    logger.info(f"Here's route: {route}")
     route_time = route['Summary']['DurationSeconds']/60
     return route_time  # minutes
     
