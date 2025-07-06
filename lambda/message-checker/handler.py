@@ -78,9 +78,9 @@ def merge_estimates_and_routes(all_estimates_obj, route_times_obj):
 
     # List of units to exclude
     excluded_units = [
-        "CAIS Cândida de Morais",
-        "UPA Região Noroeste",
-        "Cais Finsocial"
+        # "CAIS Cândida de Morais",
+        # "UPA Região Noroeste",
+        # "Cais Finsocial"
     ]
 
     # Filter and merge estimates
