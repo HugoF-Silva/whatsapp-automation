@@ -52,9 +52,34 @@ resource "aws_iam_role_policy_attachment" "lambda_secrets" {
   policy_arn = data.aws_iam_policy.secretsmanager_get.arn
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_location_readonly" {
-  role       = aws_iam_role.lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonLocationServiceReadOnly"
+locals {
+  region      = var.aws_region      # e.g. "us-east-1"
+  account_id  = data.aws_caller_identity.current.account_id
+  calculator  = "MyEsriRouteCalculator"
+  calc_arn    = "arn:aws:geo:${local.region}:${local.account_id}:route-calculator/${local.calculator}"
+}
+
+resource "aws_iam_role_policy" "lambda_location_calc" {
+  name = "lambda-location-calc-policy"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      # allow the Lambda to check that the calculator exists
+      {
+        Effect   = "Allow"
+        Action   = "geo:DescribeRouteCalculator"
+        Resource = local.calc_arn
+      },
+      # allow the Lambda to actually calculate routes
+      {
+        Effect   = "Allow"
+        Action   = "geo:CalculateRoute"
+        Resource = local.calc_arn
+      }
+    ]
+  })
 }
 
 resource "aws_lambda_function" "message_checker" {
