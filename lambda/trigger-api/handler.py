@@ -12,8 +12,28 @@ import requests
 import httpx
 from jose import jwt
 from mangum import Mangum
+from contextlib import asynccontextmanager
+import boto3
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ——— Startup ———
+    # Initialize the client and fetch your calculator once at cold start
+    location_client = boto3.client("location", region_name="us-east-1")
+    try:
+        resp = location_client.describe_route_calculator(
+            CalculatorName="MyEsriRouteCalculator"
+        )
+    except Exception as e:
+        raise RuntimeError("Failed to load Route Calculator at startup") from e
+
+    # Store for later use
+    app.state.location_client = location_client
+    app.state.calculator_name = resp["CalculatorName"]
+
+    yield  # here the app is ready to serve requests
+
+app = FastAPI(lifespan=lifespan)
 datastore = DataStore()
 estimator = WaitTimeEstimator(datastore)
 
@@ -31,6 +51,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
 
 @app.get("/health", response_model=HealthCheckResponse)
 def health():
@@ -101,6 +123,8 @@ def all_estimates(query_time: datetime = Query(...)):
 def route_times(req: RouteTimeRequest):
     units = datastore.get_all_units_with_locations()
     results = []
+    client = app.state.location_client
+    name   = app.state.calculator_name
     for unit_info in units:
         print(f"NO DUPLICATE -- UNIT NAME: {unit_info.get('unit')}")
         lat, lng = unit_info.get("lat"), unit_info.get("lng")
@@ -108,6 +132,8 @@ def route_times(req: RouteTimeRequest):
             continue
         print(f"user lat lon: {req.latitude, req.longitude}")
         travel_time = get_route_time(
+            client,
+            name,
             req.latitude,
             req.longitude,
             lat,

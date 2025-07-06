@@ -88,7 +88,7 @@ class IntentionClassifier:
                 temperature=0,
                 max_tokens=None,
                 timeout=None,
-                max_retries=2,
+                max_retries=2
             )
             return self.llm
         except Exception as e:

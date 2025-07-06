@@ -2,7 +2,6 @@ from datetime import datetime, time, timedelta, date
 from fastapi import HTTPException, Request, status
 import numpy as np
 from typing import List, Tuple, Optional
-from WazeRouteCalculator import WazeRouteCalculator
 import logging
 from zoneinfo import ZoneInfo
 from botocore.exceptions import ClientError
@@ -146,19 +145,25 @@ def business_days_between(start_date, end_date) -> int:
             business_days += 1
     return business_days
 
-
-def get_route_time(start_lat, start_lng, end_lat, end_lng):
+def get_route_time(client, name, start_lat, start_lng, end_lat, end_lng):
     try:
-        start = f"{start_lat},{start_lng}"
-        end = f"{end_lat},{end_lng}"
-        region = 'EU'  # Use 'EU' for Brazil
-        calculator = WazeRouteCalculator(start, end, region)
-        route_time, route_distance = calculator.calc_route_info()
-        return route_time  # minutes
+        # This is a synchronous boto3 call; for heavy load you could
+        # offload it into run_in_executor if you prefer not to block.
+        route = client.calculate_route(
+            CalculatorName=name,
+            DeparturePosition=[start_lng, start_lat],
+            DestinationPosition=[end_lng, end_lat],
+            TravelMode="Car",
+            DistanceUnit="Kilometers",
+            IncludeLegGeometry=False,
+            DepartNow=True
+        )
     except Exception as e:
-        # Log error or return a high fallback value
-        return None
+        raise HTTPException(status_code=500, detail=str(e))
 
+    route_time = route['Summary']['DurationSeconds']/60
+    return route_time  # minutes
+    
 def weighted_median(data: np.ndarray, weights: np.ndarray) -> float:
     sorter = np.argsort(data)
     data, weights = data[sorter], weights[sorter]

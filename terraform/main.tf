@@ -19,6 +19,16 @@ data "aws_iam_policy" "secretsmanager_get" {
   name = var.lambda_secret_permission
 }
 
+resource "aws_location_route_calculator" "esri" {
+  calculator_name = "MyEsriRouteCalculator"  # must be unique per AWS account :contentReference[oaicite:0]{index=0}
+  data_source     = "Esri"                   # use Esri road-network + traffic data :contentReference[oaicite:1]{index=1}
+  pricing_plan    = "RequestBasedUsage"      # billing based on request count
+
+  tags = {
+    Name        = "MyEsriRouteCalculator"
+  }
+}
+
 ### IAM role for both Lambdas ###
 resource "aws_iam_role" "lambda_exec" {
   name = "whatsapp-lambda-exec-${var.deployment_id}"

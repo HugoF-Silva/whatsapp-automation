@@ -157,7 +157,17 @@ Interações mais recentes entre o usuário e você.
             clean_cep = message.replace("-", "")
             resp = http.request(method="GET", url=f"https://api.opencagedata.com/geocode/v1/json?q={clean_cep}&key={OPEN_CAGE_KEY}")
             resp_data = json.loads(resp.data.decode("utf-8"))
-            if (latitude:=resp_data["results"][0]["geometry"].get("lat", None)) and (longitude:=resp_data["results"][0]["geometry"].get("lng", None)):
+            try:
+                latitude = resp_data["results"][0]["geometry"].get("lat", None)
+                longitude =  resp_data["results"][0]["geometry"].get("lng", None)
+            except:
+                print("ENTERED EXCEPT")
+                resp = http.request(method="GET", url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
+                resp_data = json.loads(resp.data)
+                latitude = resp_data.get("latitude", None) 
+                longitude = resp_data.get("longitude", None)
+
+            if latitude and longitude:
                 body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude }).encode('utf-8')
                 print(f"TRIGGER_API_URL: {TRIGGER_API_URL}")
                 resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)
