@@ -173,6 +173,7 @@ Interações mais recentes entre o usuário e você.
                 resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)
                 # resp = {"message":"Route times stored."}
                 resp = json.loads(resp.data.decode('utf-8'))
+                logging.info(f"Travel time req: {resp}")
                 resp_data = resp['message']
                 # resp_data = json.loads(resp.data)
                 if resp_data == "Route times stored.":
