@@ -111,6 +111,7 @@ def lambda_handler(event, context):
     logger.info("Hours: %d", hour_int)
 
     mensagem = None
+    additional = ""
     if (hour_int < 5) or (hour_int >= 21):
         mensagem = "Não calculo tempo de espera entre 21:00 ~ 05:00, nem finais de semana...                                                                                    Um segredo que só quem é da comunidade Menos Tempo sabe: *eu conseguiria* se você dissesse que quer a Menos Tempo oficialmente pelo link bit.ly/quero-oficialmente 🤏"
         logger.info("Entered mensagem clause")
@@ -162,8 +163,10 @@ def lambda_handler(event, context):
                 try:
                     latitude = resp_data["results"][0]["geometry"].get("lat", None)
                     longitude =  resp_data["results"][0]["geometry"].get("lng", None)
+                    additional = "\n\nopencage"
                 except:
-                    print("ENTERED EXCEPT")
+                    # print("ENTERED EXCEPT")
+                    additional = "\n\ncepaberto"
                     resp = http.request(method="GET", url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
                     resp_data = json.loads(resp.data)
                     latitude = resp_data.get("latitude", None) 
@@ -329,7 +332,7 @@ def lambda_handler(event, context):
     
     payload = {
     "number": user_phone,
-    "text": mensagem
+    "text": mensagem + additional
     }
     headers = {
     "apikey": AUTHENTICATION_API_KEY,
