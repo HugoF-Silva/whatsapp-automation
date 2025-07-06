@@ -4,6 +4,7 @@ from schema import (
     AllEstimatesResponse, UnitEstimates, RegisterUnitRequest, RegisterUnitResponse,
     RouteTimeRequest, RouteTimeResponse, RouteTimeResult
 )
+from decimal import Decimal
 from data_store import DataStore
 from models import WaitTimeEstimator
 from datetime import datetime, timezone
@@ -135,8 +136,8 @@ def route_times(req: RouteTimeRequest):
             name,
             req.latitude,
             req.longitude,
-            lat,
-            lng
+            Decimal(lat),
+            Decimal(lng)
         )
         print(f"travel_time: {travel_time}")
         results.append(
