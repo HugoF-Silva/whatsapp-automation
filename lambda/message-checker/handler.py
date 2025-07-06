@@ -104,17 +104,17 @@ def lambda_handler(event, context):
     
     date_time_string = event_body['date_time']
 
-    date_time_string = '2025-07-01T17:05:10.891Z'
+    # date_time_string = '2025-07-01T17:05:10.891Z'
     date_time_string = date_time_string.rstrip('Z')  # Remove the 'Z'
     date_obj = datetime.fromisoformat(date_time_string)
     hour_int = date_obj.hour
     logger.info("Hours: %d", hour_int)
 
+    mensagem = None
     if (hour_int < 5) or (hour_int >= 21):
-        mensagem = "Não calculo tempo de espera entre 21:00 ~ 05:00, nem finais de semana...                                                                                    Um segredo que só quem é da comunidade Menos Tempo sabe: *eu conseguiria* se você dissesse que quer a Menos Tempo oficialmente pelo link bit.ly/quero-oficialmente 🤏 (não conta pra ninguém, é exclusivo 🤫)"
+        mensagem = "Não calculo tempo de espera entre 21:00 ~ 05:00, nem finais de semana...                                                                                    Um segredo que só quem é da comunidade Menos Tempo sabe: *eu conseguiria* se você dissesse que quer a Menos Tempo oficialmente pelo link bit.ly/quero-oficialmente 🤏"
         logger.info("Entered mensagem clause")
         
-    
     type_msg = event_body['data']['messageType']
     user_phone = event_body['data']['key']['remoteJid']
     secret = get_secret("pseodonym/salt")['SALT']
@@ -122,67 +122,124 @@ def lambda_handler(event, context):
 
     history = get_recent_history(f"{cripto_number}", 3)
     content = ""
-    if history:
-        content = f"""
-## Histórico de mensagens
-Interações mais recentes entre o usuário e você.
-{history}
-"""            
-    classifier = IntentionClassifier(history=content)
+    if not mensagem:
 
-    if (type_msg == "conversation"):
-        try:
-            message = event_body['data']['message']['conversation']
-            
-            # Check message length
-            if len(message) > 160000:
-                raise Exception("Message too long = possible crash attempt")
+        if history:
+            content = f"""
+    ## Histórico de mensagens
+    Interações mais recentes entre o usuário e você.
+    {history}
+    """            
+        classifier = IntentionClassifier(history=content)
 
-            # Check for excessive emojis or special characters (zero-width & formatting)
-            special_chars = re.compile(r'[\u200B-\u200D\uFEFF]')
-            if len(special_chars.findall(message)) > 100:
-                raise Exception("Suspicious number of formatting characters")
-
-            # Optional: Detect Zalgo (overuse of diacritics)
-            zalgo = re.compile(r'[\u0300-\u036f]{3,}')
-            if zalgo.search(message):
-                raise Exception("Zalgo-like text detected")
-                            
-        except:
-            pass
-            # block number with evo api
-
-        pattern = r'^\d{5}-?\d{3}$'
-        if re.match(pattern, message): # if cep
-            clean_cep = message.replace("-", "")
-            resp = http.request(method="GET", url=f"https://api.opencagedata.com/geocode/v1/json?q={clean_cep}&key={OPEN_CAGE_KEY}")
-            resp_data = json.loads(resp.data.decode("utf-8"))
+        if (type_msg == "conversation"):
             try:
-                latitude = resp_data["results"][0]["geometry"].get("lat", None)
-                longitude =  resp_data["results"][0]["geometry"].get("lng", None)
-            except:
-                print("ENTERED EXCEPT")
-                resp = http.request(method="GET", url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
-                resp_data = json.loads(resp.data)
-                latitude = resp_data.get("latitude", None) 
-                longitude = resp_data.get("longitude", None)
+                message = event_body['data']['message']['conversation']
+                
+                # Check message length
+                if len(message) > 160000:
+                    raise Exception("Message too long = possible crash attempt")
 
-            if latitude and longitude:
-                body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude }).encode('utf-8')
-                print(f"TRIGGER_API_URL: {TRIGGER_API_URL}")
-                resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)
-                # resp = {"message":"Route times stored."}
-                resp = json.loads(resp.data.decode('utf-8'))
-                logging.info(f"Travel time req: {resp}")
-                resp_data = resp['message']
-                # resp_data = json.loads(resp.data)
-                if resp_data == "Route times stored.":
-                    time.sleep(1)
-                    resp = http.request(method="GET",url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
-                    # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
-                    # resp = {"data": """{"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}"""}
+                # Check for excessive emojis or special characters (zero-width & formatting)
+                special_chars = re.compile(r'[\u200B-\u200D\uFEFF]')
+                if len(special_chars.findall(message)) > 100:
+                    raise Exception("Suspicious number of formatting characters")
+
+                # Optional: Detect Zalgo (overuse of diacritics)
+                zalgo = re.compile(r'[\u0300-\u036f]{3,}')
+                if zalgo.search(message):
+                    raise Exception("Zalgo-like text detected")
+                                
+            except:
+                pass
+                # block number with evo api
+
+            pattern = r'^\d{5}-?\d{3}$'
+            if re.match(pattern, message): # if cep
+                clean_cep = message.replace("-", "")
+                resp = http.request(method="GET", url=f"https://api.opencagedata.com/geocode/v1/json?q={clean_cep}&key={OPEN_CAGE_KEY}")
+                resp_data = json.loads(resp.data.decode("utf-8"))
+                try:
+                    latitude = resp_data["results"][0]["geometry"].get("lat", None)
+                    longitude =  resp_data["results"][0]["geometry"].get("lng", None)
+                except:
+                    print("ENTERED EXCEPT")
+                    resp = http.request(method="GET", url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
+                    resp_data = json.loads(resp.data)
+                    latitude = resp_data.get("latitude", None) 
+                    longitude = resp_data.get("longitude", None)
+
+                if latitude and longitude:
+                    body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude }).encode('utf-8')
+                    print(f"TRIGGER_API_URL: {TRIGGER_API_URL}")
+                    resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)
+                    # resp = {"message":"Route times stored."}
                     resp = json.loads(resp.data.decode('utf-8'))
-                    print(resp)
+                    logging.info(f"Travel time req: {resp}")
+                    resp_data = resp['message']
+                    # resp_data = json.loads(resp.data)
+                    if resp_data == "Route times stored.":
+                        time.sleep(1)
+                        resp = http.request(method="GET",url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+                        # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
+                        # resp = {"data": """{"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}"""}
+                        resp = json.loads(resp.data.decode('utf-8'))
+                        print(resp)
+                        if not resp:
+                            behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
+                            classificacao = "erro"
+                            history1 = get_recent_history(f"1_{cripto_number}", 3)
+                            content1 = ""
+                            if history1:
+                                content1 = f"""
+    ## Histórico de mensagens
+    Interações mais recentes entre o usuário e você.
+    {history1}
+    """        
+                            answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
+                            mensagem = answerman.execute(message)
+                            save_interaction(f"1_{cripto_number}", message, mensagem)
+
+                        else:
+                            mensagem = estimate(date_time_string, cripto_number, message, resp)
+
+                    else:
+                        behind_the_courtains = "ERRO DE ENVIO DE LOCALIZAÇÃO"
+                        classificacao = "erro"
+
+                        history1 = get_recent_history(f"1_{cripto_number}", 3)
+                        content1 = ""
+                        if history1:
+                            content1 = f"""
+    ## Histórico de mensagens
+    Interações mais recentes entre o usuário e você.
+    {history1}
+    """        
+                        answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
+                        mensagem = answerman.execute(message)
+                        save_interaction(f"1_{cripto_number}", message, mensagem)
+                else:
+                    behind_the_courtains = "ERRO DE ENVIO DE LOCALIZAÇÃO"
+                    classificacao = "erro"
+                    history1 = get_recent_history(f"1_{cripto_number}", 3)
+                    content1 = ""
+                    if history1:
+                        content1 = f"""
+    ## Histórico de mensagens
+    Interações mais recentes entre o usuário e você.
+    {history1}
+    """        
+                    answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
+                    mensagem = answerman.execute(message)
+            else: # not cep
+                intent_json = classifier.execute(message)
+                print(intent_json)
+                print(type(intent_json))
+                save_interaction(f"{cripto_number}", message, intent_json)
+                if intent_json['classificacao'] == "tempo":
+                    resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+                    resp = json.loads(resp.data.decode('utf-8'))
+                    # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
                     if not resp:
                         behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
                         classificacao = "erro"
@@ -190,54 +247,46 @@ Interações mais recentes entre o usuário e você.
                         content1 = ""
                         if history1:
                             content1 = f"""
-## Histórico de mensagens
-Interações mais recentes entre o usuário e você.
-{history1}
-"""        
+    ## Histórico de mensagens
+    Interações mais recentes entre o usuário e você.
+    {history1}
+    """        
                         answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
                         mensagem = answerman.execute(message)
                         save_interaction(f"1_{cripto_number}", message, mensagem)
-
                     else:
                         mensagem = estimate(date_time_string, cripto_number, message, resp)
 
-                else:
-                    behind_the_courtains = "ERRO DE ENVIO DE LOCALIZAÇÃO"
-                    classificacao = "erro"
-
+                elif intent_json['classificacao'] == "ajudar" or intent_json['classificacao'] == "outro":
+                    behind_the_courtains = intent_json['raciocinio']
+                    classificacao = intent_json['classificacao']
                     history1 = get_recent_history(f"1_{cripto_number}", 3)
                     content1 = ""
                     if history1:
                         content1 = f"""
-## Histórico de mensagens
-Interações mais recentes entre o usuário e você.
-{history1}
-"""        
+    ## Histórico de mensagens
+    Interações mais recentes entre o usuário e você.
+    {history1}
+    """        
                     answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
                     mensagem = answerman.execute(message)
                     save_interaction(f"1_{cripto_number}", message, mensagem)
-            else:
-                behind_the_courtains = "ERRO DE ENVIO DE LOCALIZAÇÃO"
-                classificacao = "erro"
-                history1 = get_recent_history(f"1_{cripto_number}", 3)
-                content1 = ""
-                if history1:
-                    content1 = f"""
-## Histórico de mensagens
-Interações mais recentes entre o usuário e você.
-{history1}
-"""        
-                answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
-                mensagem = answerman.execute(message)
-        else: # not cep
-            intent_json = classifier.execute(message)
-            print(intent_json)
-            print(type(intent_json))
-            save_interaction(f"{cripto_number}", message, intent_json)
-            if intent_json['classificacao'] == "tempo":
-                resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
-                resp = json.loads(resp.data.decode('utf-8'))
+
+        elif (type_msg == "locationMessage"):
+            latitude = event_body['data']['message']['locationMessage']['degreesLatitude']
+            longitude = event_body['data']['message']['logationMessage']['degreesLongitude']
+            body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
+            resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30)
+            # resp = {"message":"Route times stored."}
+            resp = json.loads(resp.data.decode('utf-8'))
+
+            if json.loads(resp['message']) == "Route times stored":
+                time.sleep(1)
                 # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
+                # resp = {"data": """{"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}"""}
+                resp = http.request(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+                resp = json.loads(resp.data.decode('utf-8'))
+
                 if not resp:
                     behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
                     classificacao = "erro"
@@ -245,84 +294,37 @@ Interações mais recentes entre o usuário e você.
                     content1 = ""
                     if history1:
                         content1 = f"""
-## Histórico de mensagens
-Interações mais recentes entre o usuário e você.
-{history1}
-"""        
+    ## Histórico de mensagens
+    Interações mais recentes entre o usuário e você.
+    {history1}
+    """        
                     answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
                     mensagem = answerman.execute(message)
                     save_interaction(f"1_{cripto_number}", message, mensagem)
                 else:
                     mensagem = estimate(date_time_string, cripto_number, message, resp)
 
-            elif intent_json['classificacao'] == "ajudar" or intent_json['classificacao'] == "outro":
-                behind_the_courtains = intent_json['raciocinio']
-                classificacao = intent_json['classificacao']
-                history1 = get_recent_history(f"1_{cripto_number}", 3)
-                content1 = ""
-                if history1:
-                    content1 = f"""
-## Histórico de mensagens
-Interações mais recentes entre o usuário e você.
-{history1}
-"""        
-                answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
-                mensagem = answerman.execute(message)
-                save_interaction(f"1_{cripto_number}", message, mensagem)
 
-    elif (type_msg == "locationMessage"):
-        latitude = event_body['data']['message']['locationMessage']['degreesLatitude']
-        longitude = event_body['data']['message']['logationMessage']['degreesLongitude']
-        body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
-        resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30)
-        # resp = {"message":"Route times stored."}
-        resp = json.loads(resp.data.decode('utf-8'))
-
-        if json.loads(resp['message']) == "Route times stored":
-            time.sleep(1)
-            # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
-            # resp = {"data": """{"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}"""}
-            resp = http.request(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
-            resp = json.loads(resp.data.decode('utf-8'))
-
-            if not resp:
-                behind_the_courtains = "O USUÁRIO NÃO FORNECEU LOCALIZAÇÃO (OU CEP), E PORTANTO NÃO CONSEGUIMOS CALCALCULAR O TEMPO TOTAL A SER GASTO (O SISTEMA CALCULA A PARTIR DO PONTO DE PARTIDA, O QUAL É POSSÍVEL SER IDENTIFICADO A PARTIR DA LOCALIZAÇÃO OU DO CEP)."
-                classificacao = "erro"
-                history1 = get_recent_history(f"1_{cripto_number}", 3)
-                content1 = ""
-                if history1:
-                    content1 = f"""
-## Histórico de mensagens
-Interações mais recentes entre o usuário e você.
-{history1}
-"""        
-                answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
-                mensagem = answerman.execute(message)
-                save_interaction(f"1_{cripto_number}", message, mensagem)
             else:
-                mensagem = estimate(date_time_string, cripto_number, message, resp)
+                behind_the_courtains = "ERRO DE ENVIO DE LOCALIZAÇÃO"
+                classificacao = "erro"
 
+                history1 = get_recent_history(f"1_{cripto_number}", 3)
+                content1 = ""
+                if history1:
+                    content1 = f"""
+        ## Histórico de mensagens
+        Interações mais recentes entre o usuário e você.
+        {history1}
+        """        
+                answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
+                mensagem = answerman.execute(message)
+                save_interaction(f"1_{cripto_number}", message, mensagem)
 
         else:
-            behind_the_courtains = "ERRO DE ENVIO DE LOCALIZAÇÃO"
-            classificacao = "erro"
-
-            history1 = get_recent_history(f"1_{cripto_number}", 3)
-            content1 = ""
-            if history1:
-                content1 = f"""
-    ## Histórico de mensagens
-    Interações mais recentes entre o usuário e você.
-    {history1}
-    """        
-            answerman = AnswerMan(behind_the_courtains=behind_the_courtains, classificacao=classificacao, sect_history=content1)
-            mensagem = answerman.execute(message)
-            save_interaction(f"1_{cripto_number}", message, mensagem)
-
-    else:
-        mensagem = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
-        print(f"return: {mensagem}")
-    
+            mensagem = "Sinto muito, tenho dificuldade com mensagens que não são texto nem localização. 😓"
+            print(f"return: {mensagem}")
+        
     url = f"https://{EVO_API_URL}/message/sendText/{INSTANCE_NAME}"
     
     payload = {
@@ -353,10 +355,11 @@ def estimate(date_time_string, cripto_number, message, resp):
 
     # Get ISO string in local time (remove the 'Z' at the end)
     local_iso = date_plus_3.isoformat()
+    print(local_iso)
     resp = http.request("GET", url=f"{TRIGGER_API_URL}/all_estimates?query_time={local_iso}", timeout=10)
-    resp = json.loads(resp.data.decode('utf-8'))
+    resp_data = json.loads(resp.data.decode('utf-8'))
     # resp = {"estimates":[{"unit":"CAIS Cândida de Morais","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"Cais Finsocial","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"UPA Região Noroeste","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"CIAMS Urias Magalhães","blue":0.0,"green":104.43382078017407,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"UPA Campinas","blue":0.0,"green":167.78984738678312,"yellow":0.0,"orange":0.0,"red":0.0}],"query_time":"2025-07-02T20:05:10.891000Z"}
-    if all_estimates_obj := resp:
+    if all_estimates_obj := resp_data:
         merged = merge_estimates_and_routes(all_estimates_obj, route_times_obj)
         understand = UnderstandableWaitTime(merged=merged)
         mensagem = understand.execute("De forma direta e simples, me diga o total da estimativa de tempo gasto caso eu saia daqui agora, até eu ser atendido por um médico (só o total ida + espera na recepção).")

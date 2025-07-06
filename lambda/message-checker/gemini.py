@@ -148,7 +148,7 @@ Na versão atual:
 * não é possível saber apenas o tempo de espera.
 * Tempo gasto pelo paciente = "tempo de deslocamento de carro" + "tempo de espera até ver o médico"
 * Não consegue enviar a localização da unidade de saúde.
-* Não consegue estimar tempo entre as 21:00 e as 05:00 (baixa movimentação). Data-hora atual: {{ $('Webhook').item.json.body.date_time }}
+* Não consegue estimar tempo entre as 21:00 e as 05:00 (baixa movimentação).
 * Só sabe tempo de espera estimado  para pacientes com classificação de risco verde 🟢 (80% dos pacientes) das unidades "CAIS Campinas" e "Ciams Urias Magalhães" de Goiânia.
 
 ## Precauções da Menos Tempo:
