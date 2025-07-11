@@ -120,22 +120,6 @@ def lambda_handler(event, context):
     if (hour_int < 5) or (hour_int >= 21) or (date_obj.weekday() >= 5):
         mensagem = "Não calculo tempo de espera entre 21:00 ~ 05:00, nem finais de semana...                                                                                    Um segredo que só quem é da comunidade Menos Tempo sabe: *eu conseguiria* se você dissesse que quer a Menos Tempo oficialmente pelo link bit.ly/quero-oficialmente 🤏"
         logger.info("Entered mensagem clause")
-        
-    payload = {"read_messages": [
-        {
-            "remoteJid": user_phone,
-            "fromMe": True,
-            "id": event_body['data']['key']['id']
-        }
-    ]}
-    http.request("PUT", 
-                 url = f"https://{EVO_API_URL}/chat/markMessageAsRead/{INSTANCE_NAME}", 
-                 headers={
-                "apikey": AUTHENTICATION_API_KEY,
-                "Content-Type": "application/json"
-                },
-                json=payload
-                )
     
     history = get_recent_history(f"{cripto_number}", 3)
     content = ""
