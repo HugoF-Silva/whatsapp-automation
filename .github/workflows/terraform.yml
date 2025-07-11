@@ -22,6 +22,7 @@ jobs:
       TF_VAR_google_api_key: ${{ secrets.GOOGLE_API_KEY}}
       TF_VAR_lambda_secret_permission: ${{ secrets.LAMBDA_SECRET_PERMISSION }}
       TF_VAR_open_cage_key: ${{ secrets.OPEN_CAGE_KEY }}
+      TF_VAR_findcep_url_hash: ${{ secrets.FINDCEP_URL_HASH }}
 
 
     steps:

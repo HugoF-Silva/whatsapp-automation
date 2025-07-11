@@ -23,6 +23,7 @@ TRIGGER_API_URL  = os.getenv('TRIGGER_API_URL')
 AUTHENTICATION_API_KEY = os.getenv("AUTHENTICATION_API_KEY")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME")
 OPEN_CAGE_KEY = os.getenv("OPEN_CAGE_KEY")
+FINDCEP_URL_HASH = os.getenv("FINDCEP_URL_HASH")
 r = Redis.from_env()
 
 
@@ -101,6 +102,10 @@ def lambda_handler(event, context):
     logger.info("Lambda started processing event: %s", event)
     logger.info("Lambda context: %s", context)
     event_body = json.loads(event['body'])
+    type_msg = event_body['data']['messageType']
+    user_phone = event_body['data']['key']['remoteJid']
+    secret = get_secret("pseodonym/salt")['SALT']
+    cripto_number = hash_pseudonym(user_phone, secret)
     
     date_time_string = event_body['date_time']
 
@@ -112,15 +117,26 @@ def lambda_handler(event, context):
 
     mensagem = None
     additional = ""
-    if (hour_int < 5) or (hour_int >= 21):
+    if (hour_int < 5) or (hour_int >= 21) or (date_obj.weekday() >= 5):
         mensagem = "Não calculo tempo de espera entre 21:00 ~ 05:00, nem finais de semana...                                                                                    Um segredo que só quem é da comunidade Menos Tempo sabe: *eu conseguiria* se você dissesse que quer a Menos Tempo oficialmente pelo link bit.ly/quero-oficialmente 🤏"
         logger.info("Entered mensagem clause")
         
-    type_msg = event_body['data']['messageType']
-    user_phone = event_body['data']['key']['remoteJid']
-    secret = get_secret("pseodonym/salt")['SALT']
-    cripto_number = hash_pseudonym(user_phone, secret)
-
+    payload = {"read_messages": [
+        {
+            "remoteJid": user_phone,
+            "fromMe": True,
+            "id": event_body['data']['key']['id']
+        }
+    ]}
+    http.request("PUT", 
+                 url = f"https://{EVO_API_URL}/chat/updateBlockStatus/{INSTANCE_NAME}", 
+                 headers={
+                "apikey": AUTHENTICATION_API_KEY,
+                "Content-Type": "application/json"
+                },
+                json=payload
+                )
+    
     history = get_recent_history(f"{cripto_number}", 3)
     content = ""
     if not mensagem:
@@ -134,45 +150,73 @@ def lambda_handler(event, context):
         classifier = IntentionClassifier(history=content)
 
         if (type_msg == "conversation"):
+            message = event_body['data']['message']['conversation']
             try:
-                message = event_body['data']['message']['conversation']
-                
                 # Check message length
-                if len(message) > 160000:
+                if len(message) > 160_000:
                     raise Exception("Message too long = possible crash attempt")
 
-                # Check for excessive emojis or special characters (zero-width & formatting)
+                # Check for excessive zero-width / formatting characters
                 special_chars = re.compile(r'[\u200B-\u200D\uFEFF]')
-                if len(special_chars.findall(message)) > 100:
+                amt_chars = len(special_chars.findall(message))
+                if amt_chars > 100:
                     raise Exception("Suspicious number of formatting characters")
 
-                # Optional: Detect Zalgo (overuse of diacritics)
+                # Detect Zalgo (overuse of diacritics)
                 zalgo = re.compile(r'[\u0300-\u036f]{3,}')
                 if zalgo.search(message):
                     raise Exception("Zalgo-like text detected")
+
+                # ——— Trava-Zap detection ———
+
+                # 1) Original “2000 special chars” bug :contentReference[oaicite:0]{index=0}
+                # special_all = re.compile(r"[^\w\s]", re.UNICODE)
+                # if len(special_all.findall(message)) >= 2_000:
+                #     raise Exception("Trava-Zap detected: excessive special characters")
+
+                # 2) Emoji bomb (4 200–4 400 emojis) :contentReference[oaicite:1]{index=1}
+                emoji_pattern = re.compile(
+                    "["
+                    "\U0001F300-\U0001F5FF"  # symbols & pictographs
+                    "\U0001F600-\U0001F64F"  # emoticons
+                    "\U0001F680-\U0001F6FF"  # transport & map symbols
+                    "\U0001F700-\U0001F77F"  # alchemical symbols
+                    "]",
+                    flags=re.UNICODE
+                )
+                if len(emoji_pattern.findall(message)) >= 4_000:
+                    raise Exception("Trava-Zap detected: excessive emojis")
                                 
             except:
-                pass
                 # block number with evo api
+                url = f"https://{EVO_API_URL}/chat/updateBlockStatus/{INSTANCE_NAME}"
+                payload = {
+                    "number": user_phone,
+                    "status": "block"
+                }
+
+                headers = {
+                "apikey": AUTHENTICATION_API_KEY,
+                "Content-Type": "application/json"
+                }
+
+                resp = http.request("POST", url=url, json=payload, headers=headers)
+                return {
+                    "statusCode": resp.status,
+                    "body": resp.data.decode('utf-8')
+                }
 
             pattern = r'^\d{5}-?\d{3}$'
             if re.match(pattern, message): # if cep
                 clean_cep = message.replace("-", "")
-                resp = http.request(method="GET", url=f"https://api.opencagedata.com/geocode/v1/json?q={clean_cep}&key={OPEN_CAGE_KEY}")
-                resp_data = json.loads(resp.data.decode("utf-8"))
-                try:
-                    latitude = resp_data["results"][0]["geometry"].get("lat", None)
-                    longitude =  resp_data["results"][0]["geometry"].get("lng", None)
-                    additional = "\n\nopencage"
-                except:
-                    # print("ENTERED EXCEPT")
-                    additional = "\n\ncepaberto"
-                    resp = http.request(method="GET", url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
-                    resp_data = json.loads(resp.data)
-                    latitude = resp_data.get("latitude", None) 
-                    longitude = resp_data.get("longitude", None)
-
-                if latitude and longitude:
+                resp = http.request(method="GET", url=f"https://menostempotecnologia-{FINDCEP_URL_HASH}.api.findcep.com/v1/geolocation/cep/{clean_cep}", headers={"Referer":"menostempotecnologia@gmail.com"})
+                # resp = http.request(method="GET", url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
+                resp_data = json.loads(resp.data)
+                status = resp_data['status']
+                if status == True:
+                    latitude = resp_data['location'].get("lat", None) 
+                    longitude = resp_data['location'].get("lon", None)
+                    print(f"{latitude}, {longitude}")
                     body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude }).encode('utf-8')
                     print(f"TRIGGER_API_URL: {TRIGGER_API_URL}")
                     resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)

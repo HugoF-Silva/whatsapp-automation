@@ -58,3 +58,9 @@ variable "open_cage_key" {
   description = "Name of the Lambda IAM policy"
   type        = string
 }
+
+variable "findcep_url_hash" {
+  description = "Name of the Lambda IAM policy"
+  type        = string
+}
+
