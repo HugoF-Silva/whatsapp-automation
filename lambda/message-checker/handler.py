@@ -129,7 +129,7 @@ def lambda_handler(event, context):
         }
     ]}
     http.request("PUT", 
-                 url = f"https://{EVO_API_URL}/chat/updateBlockStatus/{INSTANCE_NAME}", 
+                 url = f"https://{EVO_API_URL}/chat/markMessageAsRead/{INSTANCE_NAME}", 
                  headers={
                 "apikey": AUTHENTICATION_API_KEY,
                 "Content-Type": "application/json"
