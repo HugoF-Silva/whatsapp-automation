@@ -96,6 +96,7 @@ class DataStore:
             if not cinza_time:
                 return None
             
+            
             delta_t = (timestamp - cinza_time).total_seconds() / 60.0
             local_ts = timestamp.astimezone(ZoneInfo("America/Sao_Paulo"))
             day_str = local_ts.date().isoformat()
@@ -131,7 +132,7 @@ class DataStore:
         units = set(item['unit'] for item in items)
         return list(units)
 
-    def store_user_route_times(self, user_phone, latitude, longitude, results):
+    def store_user_route_times(self, user_phone, results):
         # Calculate ttl for 48 hours from now
         ttl_value = int(time.time()) + 48 * 60 * 60
 
@@ -141,8 +142,6 @@ class DataStore:
                     "user_phone": user_phone,
                     "unit": r["unit"],
                     "travel_time_min": Decimal(str(r["travel_time_min"])) if r["travel_time_min"] is not None else None,
-                    "latitude": Decimal(str(latitude)),
-                    "longitude": Decimal(str(longitude)),
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "ttl": ttl_value  # <--- add this line!
                 })

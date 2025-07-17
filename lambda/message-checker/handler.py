@@ -201,7 +201,7 @@ def lambda_handler(event, context):
                     latitude = resp_data['location'].get("lat", None) 
                     longitude = resp_data['location'].get("lon", None)
                     print(f"{latitude}, {longitude}")
-                    body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude }).encode('utf-8')
+                    body = json.dumps({ "user_phone": cripto_number, "latitude": latitude, "longitude": longitude }).encode('utf-8')
                     print(f"TRIGGER_API_URL: {TRIGGER_API_URL}")
                     resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)
                     # resp = {"message":"Route times stored."}
@@ -211,7 +211,7 @@ def lambda_handler(event, context):
                     # resp_data = json.loads(resp.data)
                     if resp_data == "Route times stored.":
                         time.sleep(1)
-                        resp = http.request(method="GET",url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+                        resp = http.request(method="GET",url=f"{TRIGGER_API_URL}/route_times/{cripto_number}", timeout=20)
                         # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
                         # resp = {"data": """{"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}"""}
                         resp = json.loads(resp.data.decode('utf-8'))
@@ -268,7 +268,7 @@ def lambda_handler(event, context):
                 print(type(intent_json))
                 save_interaction(f"{cripto_number}", message, intent_json)
                 if intent_json['classificacao'] == "tempo":
-                    resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+                    resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{cripto_number}", timeout=20)
                     resp = json.loads(resp.data.decode('utf-8'))
                     # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
                     if not resp:
@@ -306,7 +306,7 @@ def lambda_handler(event, context):
         elif (type_msg == "locationMessage"):
             latitude = event_body['data']['message']['locationMessage']['degreesLatitude']
             longitude = event_body['data']['message']['logationMessage']['degreesLongitude']
-            body = json.dumps({ "user_phone": user_phone, "latitude": latitude, "longitude": longitude })
+            body = json.dumps({ "user_phone": cripto_number, "latitude": latitude, "longitude": longitude })
             resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30)
             # resp = {"message":"Route times stored."}
             resp = json.loads(resp.data.decode('utf-8'))
@@ -315,7 +315,7 @@ def lambda_handler(event, context):
                 time.sleep(1)
                 # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
                 # resp = {"data": """{"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}"""}
-                resp = http.request(url=f"{TRIGGER_API_URL}/route_times/{user_phone}", timeout=20)
+                resp = http.request(url=f"{TRIGGER_API_URL}/route_times/{cripto_number}", timeout=20)
                 resp = json.loads(resp.data.decode('utf-8'))
 
                 if not resp:
@@ -386,12 +386,15 @@ def estimate(date_time_string, cripto_number, message, resp):
 
     # Get ISO string in local time (remove the 'Z' at the end)
     local_iso = date_plus_3.isoformat()
-    print(local_iso)
+    print(f"Query time {local_iso}")
     resp = http.request("GET", url=f"{TRIGGER_API_URL}/all_estimates?query_time={local_iso}", timeout=10)
     resp_data = json.loads(resp.data.decode('utf-8'))
     # resp = {"estimates":[{"unit":"CAIS Cândida de Morais","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"Cais Finsocial","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"UPA Região Noroeste","blue":0.0,"green":94.02893463311297,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"CIAMS Urias Magalhães","blue":0.0,"green":104.43382078017407,"yellow":0.0,"orange":0.0,"red":0.0},{"unit":"UPA Campinas","blue":0.0,"green":167.78984738678312,"yellow":0.0,"orange":0.0,"red":0.0}],"query_time":"2025-07-02T20:05:10.891000Z"}
     if all_estimates_obj := resp_data:
+        print(f"Sorted Wait time Estimate: {all_estimates_obj}")
+        print(f"Route times estimate: {route_times_obj}")
         merged = merge_estimates_and_routes(all_estimates_obj, route_times_obj)
+        print(f"Merged (before LLM): {merged}")
         understand = UnderstandableWaitTime(merged=merged)
         mensagem = understand.execute("De forma direta e simples, me diga o total da estimativa de tempo gasto caso eu saia daqui agora, até eu ser atendido por um médico (só o total ida + espera na recepção).")
     

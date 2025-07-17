@@ -130,7 +130,7 @@ def route_times(req: RouteTimeRequest):
         lat, lng = unit_info.get("lat"), unit_info.get("lng")
         if lat is None or lng is None:
             continue
-        print(f"user lat lon: {req.latitude, req.longitude}")
+        # print(f"user lat lon: {req.latitude, req.longitude}")
         travel_time = get_route_time(
             client,
             name,
@@ -147,7 +147,7 @@ def route_times(req: RouteTimeRequest):
             }
         )
     # Store or overwrite for user
-    datastore.store_user_route_times(req.user_phone, req.latitude, req.longitude, results)
+    datastore.store_user_route_times(req.user_phone, results)
     return {"message": "Route times stored."}
 
 @app.get("/route_times/{user_phone}", response_model=RouteTimeResponse)
