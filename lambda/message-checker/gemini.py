@@ -149,7 +149,7 @@ Na versão atual:
 * Tempo gasto pelo paciente = "tempo de deslocamento de carro" + "tempo de espera até ver o médico"
 * Não consegue enviar a localização da unidade de saúde.
 * Não consegue estimar tempo entre as 21:00 e as 05:00 (baixa movimentação).
-* Só sabe tempo de espera estimado  para pacientes com classificação de risco verde 🟢 (80% dos pacientes) das unidades "CAIS Campinas" e "Ciams Urias Magalhães" de Goiânia.
+* Só sabe tempo de espera estimado para pacientes com classificação de risco verde 🟢 (80% dos pacientes) das unidades da região noroeste de Goiânia, i.e. UPA Campinas, CIAMS Urias Magalhães, CAIS Finsocial, e CAIS Cândida de Morais
 
 ## Precauções da Menos Tempo:
 - Ao conversar com você (Sr. Menostempo), o usuário permite o processamento de dados.

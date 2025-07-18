@@ -310,18 +310,19 @@ def lambda_handler(event, context):
                     save_interaction(f"1_{cripto_number}", message, mensagem)
 
         elif (type_msg == "locationMessage"):
+            message = None
             latitude = event_body['data']['message']['locationMessage']['degreesLatitude']
             longitude = event_body['data']['message']['locationMessage']['degreesLongitude']
             body = json.dumps({ "user_phone": cripto_number, "latitude": latitude, "longitude": longitude })
-            resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30)
+            resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", body=body, timeout=30)
             # resp = {"message":"Route times stored."}
             resp = json.loads(resp.data.decode('utf-8'))
 
-            if json.loads(resp['message']) == "Route times stored":
+            if resp['message'] == "Route times stored.":
                 time.sleep(1)
                 # resp = {"data": {"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}}
                 # resp = {"data": """{"user_phone":"556296504306@s.whatsapp.net","results":[{"unit":"CAIS Cândida de Morais","travel_time_min":"29.216666666666665","timestamp":"2025-07-02T16:22:43.082107+00:00"},{"unit":"CIAMS Urias Magalhães","travel_time_min":"15.933333333333334","timestamp":"2025-07-02T16:22:43.082139+00:00"},{"unit":"Cais Finsocial","travel_time_min":"34.916666666666664","timestamp":"2025-07-02T16:22:43.082146+00:00"},{"unit":"UPA Campinas","travel_time_min":"19.616666666666667","timestamp":"2025-07-02T16:22:43.082152+00:00"},{"unit":"UPA Região Noroeste","travel_time_min":"32.95","timestamp":"2025-07-02T16:22:43.082131+00:00"}]}"""}
-                resp = http.request(url=f"{TRIGGER_API_URL}/route_times/{cripto_number}", timeout=20)
+                resp = http.request("GET", url=f"{TRIGGER_API_URL}/route_times/{cripto_number}", timeout=20)
                 resp = json.loads(resp.data.decode('utf-8'))
 
                 if not resp:
