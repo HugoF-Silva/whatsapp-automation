@@ -101,9 +101,15 @@ def merge_estimates_and_routes(all_estimates_obj, route_times_obj):
 def lambda_handler(event, context):
     logger.info("Lambda started processing event: %s", event)
     logger.info("Lambda context: %s", context)
+    
     event_body = json.loads(event['body'])
     type_msg = event_body['data']['messageType']
     user_phone = event_body['data']['key']['remoteJid']
+    its_me = event_body['data']['key']['fromMe']
+
+    if its_me:
+        raise
+
     secret = get_secret("pseodonym/salt")['SALT']
     cripto_number = hash_pseudonym(user_phone, secret)
     
@@ -305,7 +311,7 @@ def lambda_handler(event, context):
 
         elif (type_msg == "locationMessage"):
             latitude = event_body['data']['message']['locationMessage']['degreesLatitude']
-            longitude = event_body['data']['message']['logationMessage']['degreesLongitude']
+            longitude = event_body['data']['message']['locationMessage']['degreesLongitude']
             body = json.dumps({ "user_phone": cripto_number, "latitude": latitude, "longitude": longitude })
             resp = http.request("POST", url=f"{TRIGGER_API_URL}/route_times", json=body, timeout=30)
             # resp = {"message":"Route times stored."}
