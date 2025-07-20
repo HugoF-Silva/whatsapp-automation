@@ -282,7 +282,7 @@ class DataStore:
 
         self.est_cache[key] = df
         
-        return df[['delta_t']]
+        return df[['delta_t', 'day']]
     
 
 if __name__ == "__main__":

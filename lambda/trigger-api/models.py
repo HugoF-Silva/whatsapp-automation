@@ -13,18 +13,18 @@ from config import (
     CONCEPT1_MIN_SAMPLES,
     CONCEPT3_MIN_SAMPLES,
     TEMPORAL_DECAY_RATE,
-    IQR_OUTLIER_FACTOR,
-    RC_TIME_SLOTS
+    RC_TIME_SLOTS,
+    WEIGHTS
 )
 from utils import (
     assign_time_slot,
-    apply_iqr_filter,
     get_adjacent_slots,
     slot_boundaries,
     compute_temporal_weights, 
     weighted_median,
     assign_rc_wait,
-    get_secret
+    l1_normalize,
+    compute_temporal_weekday_weights
 )
 from data_store import DataStore
 import logging
@@ -92,11 +92,12 @@ class WaitTimeEstimator:
         Core Concept 1-4 logic for a specific (unit, color, slot).
         """
         day_str = query_time_sp.date().isoformat()
-        # logger.info(f"day_str: {day_str}")
         weekday = query_time_sp.weekday()
-        # logger.info(f"weekday: {weekday}")
         ref_date = query_time_sp.date()
+        # logger.info(f"day_str: {day_str}")
+        # logger.info(f"weekday: {weekday}")
         # logger.info(f"ref_date: {ref_date}")
+
         # Concept 1: same day & same slot
         # logger.info(f"debug unit: {unit}")
         # logger.info(f"debug color: {color}")
@@ -104,75 +105,51 @@ class WaitTimeEstimator:
         # logger.info(f"debug day_str: {day_str}")
         df1 = self.ds.fetch_samples_unit_day_slot_color_df(unit, color, slot, day_str)
         # logger.info("df1 as json: %s", df1.to_json(orient="records"))
-        # df1 has columns ["delta_t","day"]; all days == ref_date
-        s1 = apply_iqr_filter(df1["delta_t"].to_numpy(), IQR_OUTLIER_FACTOR)
-        n1 = len(s1)
-        m1 = float(np.median(s1)) if n1 else None
-
-        # Concept 3: all days, same slot
-        df3 = self.ds.fetch_samples_unit_slot_color_all_days_df(unit, color, slot)
-        # logger.info("df3 as json: %s", df3.to_json(orient="records"))
-        # raw3 = apply_iqr_filter(df3["delta_t"].to_numpy(), IQR_OUTLIER_FACTOR)
-        # temporal weights by day
-        weights3 = compute_temporal_weights(
-            [d for d in df3["day"]], ref_date, TEMPORAL_DECAY_RATE
-        )
-        # logger.info(f"weights3: {weights3}")
-        # align weights to raw3 after filter (simplest: assume df3 already IQR-filtered)
-        raw3 = df3["delta_t"].to_numpy()
-        n3 = len(raw3)
-        m3 = float(weighted_median(raw3, weights3)) if n3 else None
+        raw1 = df1["delta_t"].to_numpy()
+        n1 = len(raw1)
+        m1 = float(np.median(raw1)) if n1 else None
 
         # Concept 2: same weekday, same slot
         df2 = self.ds.fetch_samples_unit_color_slot_weekday_df(unit, color, slot, weekday)
         # logger.info("df2 as json: %s", df2.to_json(orient="records"))
-        # raw2 = apply_iqr_filter(df2["delta_t"].to_numpy(), IQR_OUTLIER_FACTOR)
+        days2 = df2["day"].tolist()
+        weights2 = compute_temporal_weekday_weights(days2, ref_date, TEMPORAL_DECAY_RATE)
         raw2 = df2["delta_t"].to_numpy()
-        weights2 = compute_temporal_weights(
-            [d for d in df2["day"]], ref_date, TEMPORAL_DECAY_RATE
-        )
         # logger.info(f"weights2: {weights2}")
         n2 = len(raw2)
         m2 = float(weighted_median(raw2, weights2)) if n2 else None
 
+        # Concept 3: all days, same slot
+        df3 = self.ds.fetch_samples_unit_slot_color_all_days_df(unit, color, slot)
+        # logger.info("df3 as json: %s", df3.to_json(orient="records"))
+        days3 = df3["day"].tolist()
+        weights3 = compute_temporal_weights(days3, ref_date, TEMPORAL_DECAY_RATE)
+        # logger.info(f"weights3: {weights3}")
+        raw3 = df3["delta_t"].to_numpy()
+        n3 = len(raw3)
+        m3 = float(weighted_median(raw3, weights3)) if n3 else None
+
         # Concept 4: cross‐unit, same slot
         df4 = self.ds.fetch_samples_color_slot_all_units_df(color, slot)
         # logger.info("df4 as json: %s", df4.to_json(orient="records"))
-        s4 = apply_iqr_filter(df4["delta_t"].to_numpy(), IQR_OUTLIER_FACTOR)
-        n4 = len(s4)
-        m4 = float(np.median(s4)) if n4 else DEFAULT_WAIT_BY_SLOT_COLOR[slot][color]
+        days4 = df4["day"].tolist()
+        weights4 = compute_temporal_weights(days4, ref_date, TEMPORAL_DECAY_RATE)
+        raw4 = df4["delta_t"].to_numpy()
+        n4 = len(raw4)
+        m4 = float(weighted_median(raw4, weights4)) if n4 else DEFAULT_WAIT_BY_SLOT_COLOR[slot][color]
+        n4 = len(raw4)
 
-        # ——————————————————————————————
-        # 1) Base: Prefers C1, else C3, else C4
-        fallback_to_c3 = False
-        if n1 >= CONCEPT1_MIN_SAMPLES:
-            # logger.info("using: same day & same slot")
-            est, total_n = m1, n1
-            fallback_to_c3 = (n1 == CONCEPT1_MIN_SAMPLES)
-        elif n3 > 0:
-            # logger.info("using: all days, same slot")
-            est, total_n = m3, n3
-            fallback_to_c3 = True
+        wa, wb = l1_normalize(WEIGHTS)
+        if n1 > CONCEPT1_MIN_SAMPLES and m2 is not None:
+            est = wa * m1 + wb * m2
+        elif m2 is not None and n3 > CONCEPT3_MIN_SAMPLES:
+            est = wa * m2 + wb * m3
+        elif n1 > CONCEPT1_MIN_SAMPLES and n3 > CONCEPT3_MIN_SAMPLES:
+            est = wa * m1 + wb * m3
+        elif m2 is not None and n4 > 0:
+            est = wa * m2 + wb * m4
         else:
-            # logger.info("using: cross-unit, same slot")
-            est, total_n = m4, n4
-            fallback_to_c3 = False
-
-        # 2) Tilt toward C2 if available
-        if m2 is not None:
-            # logger.info("using: same weekday, same slot")
-            w2 = n2 / (total_n + n2)
-            est = (1 - w2) * est + w2 * m2
-            total_n += n2
-
-        # 3) Dynamic C3 threshold based on how long we've been collecting
-        threshold3 = max(CONCEPT3_MIN_SAMPLES, n2)
-
-        # 4) If we fell back to C3 but have too few C3 samples, tilt toward C4
-        if fallback_to_c3 and n3 < threshold3:
-            w4 = n4 / (total_n + n4)
-            est = (1 - w4) * est + w4 * m4
-            total_n += n4
+            est = m4
 
         # 5) Clip to plausible range
         plausible_delta = self._clip(est)

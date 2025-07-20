@@ -12,25 +12,16 @@ TIME_SLOTS = [
 ]
 
 CONCEPT1_MIN_SAMPLES = 1
-CONCEPT3_MIN_SAMPLES = 5
+CONCEPT3_MIN_SAMPLES = 25
 
 RC_TIME_SLOTS = [
-    ("05:00", "07:00", 15), # 20?
+    ("05:00", "07:00", 35), # 20?
     ("07:00", "11:00", 10), # 30?
     ("11:00", "14:00", 30),
     ("14:00", "16:00", 40),
-    ("16:00", "18:00", 45),
+    ("16:00", "18:00", 10),
     ("18:00", "21:00", 60)
 ]
-
-DEFAULT_RC_ROOM_WAIT = {
-    "05:00-07:00": 15,
-    "07:00-11:00": 10,
-    "11:00-14:00": 30,
-    "14:00-16:00": 40,
-    "16:00-18:00": 45,
-    "18:00-21:00": 60
-}
 
 DEFAULT_WAIT_BY_SLOT_COLOR = {
     "05:00-08:00": {'b': 80, 'g': 65, 'y': 50, 'o': 35, 'r': 2},
@@ -43,9 +34,6 @@ DEFAULT_WAIT_BY_SLOT_COLOR = {
 # Minutes for boundary blending
 SLOT_BOUNDARY_SMOOTHING_WINDOW_MIN = 75
 
-# Outlier thresholds (IQR method)
-IQR_OUTLIER_FACTOR = 2.0
-
 # Default wait times by color (minutes)
 DEFAULT_WAIT_BY_COLOR = {
     'b': 60,  # blue
@@ -56,9 +44,10 @@ DEFAULT_WAIT_BY_COLOR = {
 }
 
 # Maximum valid delta_t (minutes)
-MAX_WAIT_MINUTES = 360
+MAX_WAIT_MINUTES = 720
 MIN_WAIT_MINUTES = 5
 
 DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE", "wait_time_events")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 TEMPORAL_DECAY_RATE = 0.8
+WEIGHTS = [3, 2]

@@ -86,6 +86,13 @@ def apply_iqr_filter(values: np.ndarray, factor: float = 1.5):
     upper = q3 + factor * iqr
     return values[(values >= lower) & (values <= upper)]
 
+def compute_temporal_weekday_weights(dates: List[date], reference: date, decay_rate: float) -> np.ndarray:
+    w = []
+    for d in dates:
+        weeks = weeks_past(d, reference)
+        w.append(decay_rate ** weeks)
+    return np.array(w)
+
 def compute_temporal_weights(dates: List[date], reference: date, decay_rate: float) -> np.ndarray:
     """
     For each sample date d in `dates`, compute decay_rate ** business_days_between(d, reference).
@@ -97,12 +104,24 @@ def compute_temporal_weights(dates: List[date], reference: date, decay_rate: flo
         # logger.info(f"business days between: {d} and {reference}")
         days = business_days_between(d, reference)
         # logger.info(f"days: {days}")
-        if days <= 0:
-            w.append(0)
-        else:
-            w.append(decay_rate ** days)
+        # if days == 0:
+            # w.append(0)
+        # else:
+        w.append(decay_rate ** days)
         # logger.info(f"weights loading: {w}")
     return np.array(w)
+
+def l1_normalize(a):
+    """
+    Return the L1-normalized version of array a,
+    i.e. a / sum(|a|). If the sum of absolute values is zero,
+    raises a ValueError.
+    """
+    a = np.asarray(a, dtype=float)
+    norm = np.abs(a).sum()
+    if norm == 0:
+        raise ValueError("Cannot L1‑normalize: sum of absolute values is zero.")
+    return a / norm
 
 def get_adjacent_slots(slots: List[Tuple[str, str]], slot_label: str) -> Tuple[Optional[str], Optional[str]]:
     """Given a slot label, returns (previous_slot, next_slot) labels if exist."""
@@ -131,6 +150,18 @@ def to_date(d):
     # handles ISO strings with “Z” or offsets:
     return parser.isoparse(d).date()
 
+def weeks_past(start_date: date, end_date: date) -> int:
+    """
+    Count the number of full weeks from start_date up to end_date.
+    Any span shorter than 7 days returns 0; negative spans return 0.
+    """
+    start = to_date(start_date)
+    end   = to_date(end_date)
+    if start > end:
+        return 0
+    delta_days = (end - start).days
+    return delta_days // 7
+
 def business_days_between(start_date, end_date) -> int:
     """Count Mon–Fri days from start_date to end_date inclusive."""
     start = to_date(start_date)
@@ -138,7 +169,7 @@ def business_days_between(start_date, end_date) -> int:
     if start > end:
         return 0
 
-    total_days = (end - start).days + 1
+    total_days = (end - start).days
     business_days = 0
     for i in range(total_days):
         if (start + timedelta(days=i)).weekday() < 5:
