@@ -104,10 +104,10 @@ def compute_temporal_weights(dates: List[date], reference: date, decay_rate: flo
         # logger.info(f"business days between: {d} and {reference}")
         days = business_days_between(d, reference)
         # logger.info(f"days: {days}")
-        if days == 0:
-            w.append(0)
-        else:
-            w.append(decay_rate ** days)
+        # if days == 0:
+        #     w.append(0)
+        # else:
+        w.append(decay_rate ** days)
         # logger.info(f"weights loading: {w}")
     return np.array(w)
 
@@ -169,7 +169,7 @@ def business_days_between(start_date, end_date) -> int:
     if start > end:
         return 0
 
-    total_days = (end - start).days + 1
+    total_days = (end - start).days
     business_days = 0
     for i in range(total_days):
         if (start + timedelta(days=i)).weekday() < 5:

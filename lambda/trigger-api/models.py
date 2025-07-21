@@ -139,49 +139,49 @@ class WaitTimeEstimator:
         m4 = float(weighted_median(raw4, weights4)) if n4 else DEFAULT_WAIT_BY_SLOT_COLOR[slot][color]
         n4 = len(raw4)
 
-        # wa, wb = l1_normalize(WEIGHTS)
-        # if n1 > CONCEPT1_MIN_SAMPLES and m2 is not None:
-        #     est = wa * m1 + wb * m2
-        # elif m2 is not None and n3 > CONCEPT3_MIN_SAMPLES:
-        #     est = wa * m2 + wb * m3
-        # elif n1 > CONCEPT1_MIN_SAMPLES and n3 > CONCEPT3_MIN_SAMPLES:
-        #     est = wa * m1 + wb * m3
-        # elif m2 is not None and n4 > 0:
-        #     est = wa * m2 + wb * m4
-        # else:
-        #     est = m4
-
-        fallback_to_c3 = False
-        if n1 >= CONCEPT1_MIN_SAMPLES:
-            # logger.info("using: same day & same slot")
-            est, total_n = m1, n1
-            fallback_to_c3 = (n1 == CONCEPT1_MIN_SAMPLES)
-        elif n3 > 0:
-            # logger.info("using: all days, same slot")
-            est, total_n = m3, n3
-            fallback_to_c3 = True
+        wa, wb = l1_normalize(WEIGHTS)
+        if n1 > CONCEPT1_MIN_SAMPLES and m2 is not None:
+            est = wa * m1 + wb * m2
+        elif m2 is not None and n3 > CONCEPT3_MIN_SAMPLES:
+            est = wa * m2 + wb * m3
+        elif n1 > CONCEPT1_MIN_SAMPLES and n3 > CONCEPT3_MIN_SAMPLES:
+            est = wa * m1 + wb * m3
+        elif m2 is not None and n4 > 0:
+            est = wa * m2 + wb * m4
         else:
-            est, total_n = m4, n4
-            fallback_to_c3 = False
+            est = m4
 
-        # 2) Tilt c1 or c3 estimate toward C2 if available
-        if m2 is not None:
-            # logger.info("using: same weekday, same slot")
-            w2 = n2 / (total_n + n2) # total_n will be always n1 or n3 tilted towards n2 (total_n = n4 only happens if n3 exists, n2 can't exist if n3 doesn't)
-            if n1 >= CONCEPT3_MIN_SAMPLES: # we have query slot data.
-                # even though n2 includes total_n this case, we consider them differet samples, since they were both calculated by different models (concept1 is a model, concept2 is another)
-                est = (w2 * est) + ((1-w2) * m2) # we must give more weight to n1 (total_n always <= n2, so w2 a lot bigger than  1 - w2)
-            else:
-                # even though total_n includes n2 this case, we consider them differet samples, since they were both calculated by different models (concept3 is a model, concept2 is another)
-                est = ((1-w2) * est) + (w2 * m2) # we must give more weight to n3 (total_n always >= n2, so w2 a lot smaller than 1 - w2)
-            total_n += n2
+        # fallback_to_c3 = False
+        # if n1 >= CONCEPT1_MIN_SAMPLES:
+        #     # logger.info("using: same day & same slot")
+        #     est, total_n = m1, n1
+        #     fallback_to_c3 = (n1 == CONCEPT1_MIN_SAMPLES)
+        # elif n3 > 0:
+        #     # logger.info("using: all days, same slot")
+        #     est, total_n = m3, n3
+        #     fallback_to_c3 = True
+        # else:
+        #     est, total_n = m4, n4
+        #     fallback_to_c3 = False
 
-        # 4) If we fell back to C3 but have too few C3 samples, tilt C3 estimate toward C4
-        # 4) Or, if C1 == CONCEPT1_MIN_SAMPLES, tilt C1 toward C4
-        if fallback_to_c3 and n3 < CONCEPT3_MIN_SAMPLES: # n3 nor n1 are reliable in this case (then rely on n4), but we still consider it a little.
-            w4 = n4 / (total_n + n4) # total_n will be always n1 or n3, tilted towards n4
-            est = ((1 - w4) * est) + (w4 * m4)
-            total_n += n4
+        # # 2) Tilt c1 or c3 estimate toward C2 if available
+        # if m2 is not None:
+        #     # logger.info("using: same weekday, same slot")
+        #     w2 = n2 / (total_n + n2) # total_n will be always n1 or n3 tilted towards n2 (total_n = n4 only happens if n3 exists, n2 can't exist if n3 doesn't)
+        #     if n1 >= CONCEPT3_MIN_SAMPLES: # we have query slot data.
+        #         # even though n2 includes total_n this case, we consider them differet samples, since they were both calculated by different models (concept1 is a model, concept2 is another)
+        #         est = (w2 * est) + ((1-w2) * m2) # we must give more weight to n1 (total_n always <= n2, so w2 a lot bigger than  1 - w2)
+        #     else:
+        #         # even though total_n includes n2 this case, we consider them differet samples, since they were both calculated by different models (concept3 is a model, concept2 is another)
+        #         est = ((1-w2) * est) + (w2 * m2) # we must give more weight to n3 (total_n always >= n2, so w2 a lot smaller than 1 - w2)
+        #     total_n += n2
+
+        # # 4) If we fell back to C3 but have too few C3 samples, tilt C3 estimate toward C4
+        # # 4) Or, if C1 == CONCEPT1_MIN_SAMPLES, tilt C1 toward C4
+        # if fallback_to_c3 and n3 < CONCEPT3_MIN_SAMPLES: # n3 nor n1 are reliable in this case (then rely on n4), but we still consider it a little.
+        #     w4 = n4 / (total_n + n4) # total_n will be always n1 or n3, tilted towards n4
+        #     est = ((1 - w4) * est) + (w4 * m4)
+        #     total_n += n4
 
         # 5) Clip to plausible range
         plausible_delta = self._clip(est)
