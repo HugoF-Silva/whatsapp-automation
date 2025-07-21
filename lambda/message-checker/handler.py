@@ -196,9 +196,10 @@ def lambda_handler(event, context):
                     "body": resp.data.decode('utf-8')
                 }
 
-            pattern = r'^\d{5}-?\d{3}$'
-            if re.match(pattern, message): # if cep
-                clean_cep = message.replace("-", "")
+            pattern = r'(?<!\d)\d{5}-?\d{3}(?!\d)'
+            if m := re.search(pattern, message): # if cep
+                cep = m.group()
+                clean_cep = cep.replace("-", "")
                 resp = http.request(method="GET", url=f"https://menostempotecnologia-{FINDCEP_URL_HASH}.api.findcep.com/v1/geolocation/cep/{clean_cep}", headers={"Referer":"menostempotecnologia@gmail.com"})
                 # resp = http.request(method="GET", url=f"https://www.cepaberto.com/api/v3/cep?cep={clean_cep}", headers={"Authorization":"Token token=bf2a40be4391c25294e40a44317123a7"})
                 resp_data = json.loads(resp.data)
