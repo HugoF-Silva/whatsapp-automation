@@ -380,7 +380,6 @@ def lambda_handler(event, context):
     print(url)
     print(response.data.decode('utf-8'))
 
-
 def estimate(date_time_string, cripto_number, message, resp):
     route_times_obj = resp["results"]
     
