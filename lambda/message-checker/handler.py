@@ -99,6 +99,12 @@ def merge_estimates_and_routes(all_estimates_obj, route_times_obj):
     return merged
 
 def lambda_handler(event, context):
+    event_body = json.loads(event['body'])
+    its_me = event_body['data']['key']['fromMe']
+
+    if its_me:
+        raise
+
     try:
         headers = {
         "apikey": AUTHENTICATION_API_KEY,
@@ -109,16 +115,10 @@ def lambda_handler(event, context):
         logger.info("Lambda started processing event: %s", event)
         logger.info("Lambda context: %s", context)
         
-        event_body = json.loads(event['body'])
         type_msg = event_body['data']['messageType']
         user_phone = event_body['data']['key']['remoteJid']
         if user_phone.endswith("@lid"):
             user_phone = event_body['data']['key']['senderPn']
-
-        its_me = event_body['data']['key']['fromMe']
-
-        if its_me:
-            raise
 
         secret = get_secret("pseodonym/salt")['SALT']
         cripto_number = hash_pseudonym(user_phone, secret)
