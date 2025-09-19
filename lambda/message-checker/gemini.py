@@ -3,10 +3,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_redis import RedisChatMessageHistory
 import re
 import json
-from langchain_redis import RedisChatMessageHistory
 from upstash_redis import Redis
 import os
 
