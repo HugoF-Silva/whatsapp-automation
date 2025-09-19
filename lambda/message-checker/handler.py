@@ -415,6 +415,8 @@ def estimate(date_time_string, cripto_number, message, resp):
         print(f"Route times estimate: {route_times_obj}")
         merged = merge_estimates_and_routes(all_estimates_obj, route_times_obj)
         print(f"Merged (before LLM): {merged}")
+        if merged:
+            merged = merged[0]
         understand = UnderstandableWaitTime(merged=merged)
         mensagem = understand.execute("De forma direta e simples, me diga o total da estimativa de tempo gasto caso eu saia daqui agora, até eu ser atendido por um médico (só o total ida + espera na recepção).")
     

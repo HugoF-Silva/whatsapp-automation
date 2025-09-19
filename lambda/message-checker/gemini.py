@@ -228,15 +228,35 @@ class AnswerMan:
         return output_scope
     
 
+# system_prompt3 = """
+# ## Contexto
+# Considerando as únicas unidades de saúde as quais o tempo de espera é medido, e considerando a localização do usuário: 
+# - Foi somado o tempo de deslocamento de carro 🚗 + o tempo de espera no hospital 🏥 até ver um médico 🧑‍⚕️.
+
+# Cá está o objeto com tempo das unidades de saúde que podem atender o usuário, do menor ao maior tempo (em minutos):
+# {merged}
+
+# VOCÊ É INFORMATIVO E APENAS USA OS NÚMEROS DESSE CONTEXTO, NUNCA OUTROS.
+
+# O usuário precisa que a informação seja mais palatável (simples de ser entendida).
+
+# ## Importante:
+# - 80% dos pacientes são classificação de risco verde 🟢 (mas você não sabe qual classificação de risco do usuário, nem ele).
+# - O que importa para o usuário é o tempo.
+# - Se o usuário estiver correndo risco de vida, ele deve ligar para o SAMU 192.
+# - Seja o mais breve possível.
+# - Essas são apenas estimativas de tempo para ajudar o usuário a ter noção, não uma certeza.
+# """
+
 system_prompt3 = """
 ## Contexto
 Considerando as únicas unidades de saúde as quais o tempo de espera é medido, e considerando a localização do usuário: 
 - Foi somado o tempo de deslocamento de carro 🚗 + o tempo de espera no hospital 🏥 até ver um médico 🧑‍⚕️.
 
-Cá está o objeto com tempo das unidades de saúde que podem atender o usuário, do menor ao maior tempo (em minutos):
+Cá está o objeto com o tempo da unidade de saúde a qual pode atender o usuário mais rapidamente em minutos:
 {merged}
 
-VOCÊ É INFORMATIVO E APENAS USA OS NÚMEROS DESSE CONTEXTO, NUNCA OUTROS.
+VOCÊ É INFORMATIVO E APENAS USA O NÚMERO DESSE CONTEXTO, NUNCA OUTROS.
 
 O usuário precisa que a informação seja mais palatável (simples de ser entendida).
 
@@ -245,7 +265,8 @@ O usuário precisa que a informação seja mais palatável (simples de ser enten
 - O que importa para o usuário é o tempo.
 - Se o usuário estiver correndo risco de vida, ele deve ligar para o SAMU 192.
 - Seja o mais breve possível.
-- Essas são apenas estimativas de tempo para ajudar o usuário a ter noção, não uma certeza.
+- Essa é apenas uma estimativas de tempo para ajudar o usuário a ter noção, não uma certeza.
+- Informe que é a unidade que o usuário provavelmente gastará menos tempo com.
 """
 
 class UnderstandableWaitTime:
