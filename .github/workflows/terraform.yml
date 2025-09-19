@@ -38,11 +38,9 @@ jobs:
         run: |
           cd lambda/message-checker
           docker run --rm -v "$PWD":/var/task --entrypoint bash public.ecr.aws/lambda/python:3.10 -c "
-            # clean up any prior install
             rm -rf package/ && \
-            yum install -y zip && \
+            yum install -y zip gcc gcc-c++ make && \
             pip install --upgrade pip && \
-            # no cache, force fresh download
             pip install --no-cache-dir -r requirements.txt -t package/ && \
             cp handler.py gemini.py package/ && \
             cd package && \
@@ -56,7 +54,7 @@ jobs:
           cd lambda/trigger-api
           docker run --rm -v "$PWD":/var/task --entrypoint bash public.ecr.aws/lambda/python:3.10 -c "
             rm -rf package/ && \
-            yum install -y zip && \
+            yum install -y zip gcc gcc-c++ make && \
             pip install --upgrade pip && \
             pip install --no-cache-dir -r requirements.txt -t package/ && \
             cp handler.py data_store.py config.py models.py schema.py utils.py package/ && \

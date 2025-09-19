@@ -1,4 +1,4 @@
-langchain-google-genai
-langchain-core
-langchain-redis
-upstash-redis
+langchain-google-genai==2.1.6
+langchain-core==0.3.67
+langchain-redis==0.2.3
+upstash-redis==1.4.0
